@@ -58,7 +58,7 @@ export async function exportConversation(conversationId) {
   URL.revokeObjectURL(url)
 }
 
-export async function streamChat(conversationId, content, onToken, onDone, model) {
+export async function streamChat(conversationId, content, onToken, onDone, model, regenerate = false) {
   const token = localStorage.getItem('token')
   try {
     const res = await fetch('/api/chat', {
@@ -67,7 +67,7 @@ export async function streamChat(conversationId, content, onToken, onDone, model
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({ conversation_id: conversationId, content, model }),
+      body: JSON.stringify({ conversation_id: conversationId, content, model, regenerate }),
     })
 
     if (!res.ok) {

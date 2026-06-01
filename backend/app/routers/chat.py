@@ -15,7 +15,19 @@ router = APIRouter(tags=["AI 对话"])
 @router.post("/chat")
 def chat(data: ChatRequest, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     verify_conversation_owner(data.conversation_id, user, db)
-    save_user_message(data.conversation_id, data.content, db)
+
+    if data.regenerate:
+        last_assistant = (
+            db.query(Message)
+            .filter(Message.conversation_id == data.conversation_id, Message.role == "assistant")
+            .order_by(Message.created_at.desc())
+            .first()
+        )
+        if last_assistant:
+            db.delete(last_assistant)
+            db.commit()
+    else:
+        save_user_message(data.conversation_id, data.content, db)
 
     history, conv = load_history(data.conversation_id, db)
     chunks, full_response = call_ai_api(history, model=data.model)

@@ -36,6 +36,7 @@ class ChatRequest(BaseModel):
     conversation_id: int
     content: str = Field(..., min_length=1)
     model: str | None = None
+    regenerate: bool = False
 
 
 class SystemPromptUpdate(BaseModel):

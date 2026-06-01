@@ -108,6 +108,7 @@ export const useChatStore = defineStore('chat', () => {
         (token) => { messages.value[idx].content += token },
         () => { loading.value = false },
         currentModel.value || undefined,
+        true,
       )
     } catch {
       loading.value = false
