@@ -7,6 +7,7 @@ import {
   pinConversation as pinConversationApi, archiveConversation as archiveConversationApi,
   updateSystemPrompt as updateSystemPromptApi,
 } from '../api/chat'
+import { useUserStore } from './user'
 
 export const useChatStore = defineStore('chat', () => {
   const conversations = ref([])
@@ -34,8 +35,14 @@ export const useChatStore = defineStore('chat', () => {
     try {
       const { data } = await getModels()
       models.value = data.models
-      if (!currentModel.value && data.default) {
-        currentModel.value = data.default
+      if (!currentModel.value) {
+        const userStore = useUserStore()
+        const preferred = userStore.preferences?.defaultModel
+        if (preferred && data.models.some(m => m.id === preferred)) {
+          currentModel.value = preferred
+        } else if (data.default) {
+          currentModel.value = data.default
+        }
       }
     } catch {
       // ignore
