@@ -1,5 +1,5 @@
 <script setup>
-import { reactive, ref, computed } from 'vue'
+import { reactive, ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { changePassword } from '../api/auth'
 import { useUserStore } from '../stores/user'
@@ -18,14 +18,23 @@ const presetAvatars = [
 ]
 
 const profileForm = reactive({
-  nickname: userStore.nickname,
-  avatar: userStore.avatar || presetAvatars[0],
+  nickname: '',
+  avatar: presetAvatars[0],
 })
 
 const prefForm = reactive({
-  fontSize: userStore.preferences?.fontSize || 15,
-  messageDensity: userStore.preferences?.messageDensity || 'normal',
-  defaultModel: userStore.preferences?.defaultModel || '',
+  fontSize: 15,
+  messageDensity: 'normal',
+  defaultModel: '',
+})
+
+onMounted(async () => {
+  await userStore.loadProfile()
+  profileForm.nickname = userStore.nickname || ''
+  profileForm.avatar = userStore.avatar || presetAvatars[0]
+  prefForm.fontSize = userStore.preferences?.fontSize || 15
+  prefForm.messageDensity = userStore.preferences?.messageDensity || 'normal'
+  prefForm.defaultModel = userStore.preferences?.defaultModel || ''
 })
 
 const rules = {
