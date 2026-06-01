@@ -3,10 +3,11 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models.user import User
-from app.schemas.conversation import ConversationCreate, ConversationUpdate, ConversationResponse, MessageResponse
+from app.schemas.conversation import ConversationCreate, ConversationUpdate, ConversationResponse, MessageResponse, SystemPromptUpdate
 from app.services.chat_service import (
     create_conversation, list_conversations, get_messages,
     rename_conversation, delete_conversation,
+    toggle_pin, toggle_archive, update_system_prompt,
 )
 from app.utils.security import get_current_user
 
@@ -37,3 +38,18 @@ def rename(conversation_id: int, data: ConversationUpdate, user: User = Depends(
 def delete(conversation_id: int, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     delete_conversation(conversation_id, user, db)
     return {"message": "会话已删除"}
+
+
+@router.put("/{conversation_id}/pin", response_model=ConversationResponse)
+def pin(conversation_id: int, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    return toggle_pin(conversation_id, user, db)
+
+
+@router.put("/{conversation_id}/archive", response_model=ConversationResponse)
+def archive(conversation_id: int, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    return toggle_archive(conversation_id, user, db)
+
+
+@router.put("/{conversation_id}/system-prompt", response_model=ConversationResponse)
+def set_system_prompt(conversation_id: int, data: SystemPromptUpdate, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    return update_system_prompt(conversation_id, data.system_prompt, user, db)

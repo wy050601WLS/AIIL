@@ -2,8 +2,8 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.schemas.user import UserCreate, UserLogin, UserResponse, Token, ChangePassword
-from app.services.auth_service import register_user, login_user, change_password
+from app.schemas.user import UserCreate, UserLogin, UserResponse, Token, ChangePassword, UserUpdate
+from app.services.auth_service import register_user, login_user, change_password, update_profile
 from app.models.user import User
 from app.utils.security import get_current_user
 
@@ -24,3 +24,13 @@ def login(data: UserLogin, db: Session = Depends(get_db)):
 def update_password(data: ChangePassword, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     change_password(user, data.old_password, data.new_password, db)
     return {"message": "密码修改成功"}
+
+
+@router.get("/profile", response_model=UserResponse)
+def get_profile(user: User = Depends(get_current_user)):
+    return UserResponse.model_validate(user)
+
+
+@router.put("/profile", response_model=UserResponse)
+def edit_profile(data: UserUpdate, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    return update_profile(user, data.nickname, data.avatar, data.preferences, db)

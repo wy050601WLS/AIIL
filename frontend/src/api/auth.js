@@ -11,3 +11,11 @@ export function login(username, password) {
 export function changePassword(oldPassword, newPassword) {
   return api.put('/auth/password', { old_password: oldPassword, new_password: newPassword })
 }
+
+export function getProfile() {
+  return api.get('/auth/profile')
+}
+
+export function updateProfile(data) {
+  return api.put('/auth/profile', data)
+}

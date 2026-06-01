@@ -24,6 +24,26 @@ export function getModels() {
   return api.get('/models')
 }
 
+export function editMessage(messageId, content) {
+  return api.put(`/messages/${messageId}`, { content })
+}
+
+export function deleteMessage(messageId) {
+  return api.delete(`/messages/${messageId}`)
+}
+
+export function pinConversation(conversationId) {
+  return api.put(`/conversations/${conversationId}/pin`)
+}
+
+export function archiveConversation(conversationId) {
+  return api.put(`/conversations/${conversationId}/archive`)
+}
+
+export function updateSystemPrompt(conversationId, systemPrompt) {
+  return api.put(`/conversations/${conversationId}/system-prompt`, { system_prompt: systemPrompt })
+}
+
 export async function exportConversation(conversationId) {
   const token = localStorage.getItem('token')
   const res = await fetch(`/api/conversations/${conversationId}/export`, {

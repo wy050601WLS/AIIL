@@ -1,6 +1,12 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
-import { createConversation, getConversations, getMessages, streamChat, renameConversation, deleteConversation, getModels, exportConversation } from '../api/chat'
+import { ref, computed } from 'vue'
+import {
+  createConversation, getConversations, getMessages, streamChat,
+  renameConversation, deleteConversation, getModels, exportConversation,
+  editMessage as editMessageApi, deleteMessage as deleteMessageApi,
+  pinConversation as pinConversationApi, archiveConversation as archiveConversationApi,
+  updateSystemPrompt as updateSystemPromptApi,
+} from '../api/chat'
 
 export const useChatStore = defineStore('chat', () => {
   const conversations = ref([])
@@ -9,6 +15,20 @@ export const useChatStore = defineStore('chat', () => {
   const loading = ref(false)
   const models = ref([])
   const currentModel = ref(localStorage.getItem('model') || '')
+  const showArchived = ref(false)
+
+  const filteredConversations = computed(() => {
+    let list = conversations.value
+    if (!showArchived.value) {
+      list = list.filter(c => !c.archived)
+    } else {
+      list = list.filter(c => c.archived)
+    }
+    return list
+  })
+
+  const pinnedConversations = computed(() => filteredConversations.value.filter(c => c.pinned))
+  const normalConversations = computed(() => filteredConversations.value.filter(c => !c.pinned))
 
   async function loadModels() {
     try {
@@ -114,9 +134,45 @@ export const useChatStore = defineStore('chat', () => {
     await exportConversation(currentId.value)
   }
 
+  async function editMessage(messageId, content) {
+    await editMessageApi(messageId, content)
+    const msg = messages.value.find(m => m.id === messageId)
+    if (msg) msg.content = content
+  }
+
+  async function deleteMessage(messageId) {
+    await deleteMessageApi(messageId)
+    messages.value = messages.value.filter(m => m.id !== messageId)
+  }
+
+  async function pin(id) {
+    const { data } = await pinConversationApi(id)
+    const conv = conversations.value.find(c => c.id === id)
+    if (conv) conv.pinned = data.pinned
+  }
+
+  async function archive(id) {
+    const { data } = await archiveConversationApi(id)
+    const conv = conversations.value.find(c => c.id === id)
+    if (conv) conv.archived = data.archived
+  }
+
+  function toggleShowArchived() {
+    showArchived.value = !showArchived.value
+  }
+
+  async function updateSystemPrompt(conversationId, systemPrompt) {
+    await updateSystemPromptApi(conversationId, systemPrompt)
+    const conv = conversations.value.find(c => c.id === conversationId)
+    if (conv) conv.system_prompt = systemPrompt
+  }
+
   return {
     conversations, currentId, messages, loading, models, currentModel,
+    showArchived, filteredConversations, pinnedConversations, normalConversations,
     loadConversations, newConversation, selectConversation, sendMessage,
     rename, remove, regenerate, loadModels, setModel, exportCurrent,
+    editMessage, deleteMessage, pin, archive, toggleShowArchived,
+    updateSystemPrompt,
   }
 })

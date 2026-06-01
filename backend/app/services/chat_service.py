@@ -18,7 +18,7 @@ def list_conversations(user: User, db: Session) -> list[ConversationResponse]:
     convs = (
         db.query(Conversation)
         .filter(Conversation.user_id == user.id)
-        .order_by(Conversation.created_at.desc())
+        .order_by(Conversation.pinned.desc(), Conversation.created_at.desc())
         .all()
     )
     return [ConversationResponse.model_validate(c) for c in convs]
@@ -63,3 +63,42 @@ def delete_conversation(conversation_id: int, user: User, db: Session) -> None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="会话不存在")
     db.delete(conv)
     db.commit()
+
+
+def toggle_pin(conversation_id: int, user: User, db: Session) -> ConversationResponse:
+    conv = db.query(Conversation).filter(
+        Conversation.id == conversation_id,
+        Conversation.user_id == user.id,
+    ).first()
+    if not conv:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="会话不存在")
+    conv.pinned = not conv.pinned
+    db.commit()
+    db.refresh(conv)
+    return ConversationResponse.model_validate(conv)
+
+
+def toggle_archive(conversation_id: int, user: User, db: Session) -> ConversationResponse:
+    conv = db.query(Conversation).filter(
+        Conversation.id == conversation_id,
+        Conversation.user_id == user.id,
+    ).first()
+    if not conv:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="会话不存在")
+    conv.archived = not conv.archived
+    db.commit()
+    db.refresh(conv)
+    return ConversationResponse.model_validate(conv)
+
+
+def update_system_prompt(conversation_id: int, system_prompt: str | None, user: User, db: Session) -> ConversationResponse:
+    conv = db.query(Conversation).filter(
+        Conversation.id == conversation_id,
+        Conversation.user_id == user.id,
+    ).first()
+    if not conv:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="会话不存在")
+    conv.system_prompt = system_prompt
+    db.commit()
+    db.refresh(conv)
+    return ConversationResponse.model_validate(conv)

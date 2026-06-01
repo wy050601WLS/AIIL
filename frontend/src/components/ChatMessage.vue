@@ -3,15 +3,20 @@ import { computed } from 'vue'
 import { marked } from 'marked'
 import hljs from 'highlight.js'
 import { ElMessage } from 'element-plus'
+import { useUserStore } from '../stores/user'
+
+const userStore = useUserStore()
 
 const props = defineProps({
   role: { type: String, required: true },
   content: { type: String, default: '' },
   isLast: { type: Boolean, default: false },
   loading: { type: Boolean, default: false },
+  createdAt: { type: String, default: '' },
+  fontSize: { type: Number, default: 15 },
 })
 
-const emit = defineEmits(['regenerate'])
+const emit = defineEmits(['regenerate', 'edit', 'delete'])
 
 marked.setOptions({
   highlight(code, lang) {
@@ -29,6 +34,23 @@ const rendered = computed(() => {
   return marked.parse(props.content || '')
 })
 
+const avatarDisplay = computed(() => {
+  if (props.role === 'user') return userStore.avatar || '你'
+  return 'AI'
+})
+
+const timeDisplay = computed(() => {
+  if (!props.createdAt) return ''
+  const d = new Date(props.createdAt)
+  const hh = String(d.getHours()).padStart(2, '0')
+  const mm = String(d.getMinutes()).padStart(2, '0')
+  return `${hh}:${mm}`
+})
+
+const bubbleStyle = computed(() => ({
+  fontSize: props.fontSize + 'px',
+}))
+
 function copyContent() {
   navigator.clipboard.writeText(props.content).then(() => {
     ElMessage.success('已复制')
@@ -38,16 +60,19 @@ function copyContent() {
 
 <template>
   <div class="message-row" :class="role">
-    <div class="avatar">
-      {{ role === 'user' ? '你' : 'AI' }}
+    <div class="avatar" :class="role">
+      {{ avatarDisplay }}
     </div>
-    <div class="bubble">
+    <div class="bubble" :style="bubbleStyle">
       <div v-if="role === 'user'" class="content" v-text="content"></div>
       <div v-else class="content markdown-body" v-html="rendered"></div>
       <div v-if="!loading && content" class="msg-actions">
         <el-button text size="small" class="msg-action-btn" @click="copyContent">复制</el-button>
+        <el-button v-if="role === 'user'" text size="small" class="msg-action-btn" @click="emit('edit')">编辑</el-button>
+        <el-button text size="small" class="msg-action-btn delete-msg-btn" @click="emit('delete')">删除</el-button>
         <el-button v-if="role === 'assistant' && isLast" text size="small" class="msg-action-btn" @click="emit('regenerate')">重新生成</el-button>
       </div>
+      <div v-if="timeDisplay" class="time-stamp">{{ timeDisplay }}</div>
     </div>
   </div>
 </template>
@@ -78,12 +103,13 @@ function copyContent() {
   flex-shrink: 0;
 }
 
-.user .avatar {
+.avatar.user {
   background: var(--user-bubble);
   color: #fff;
+  font-size: 18px;
 }
 
-.assistant .avatar {
+.avatar.assistant {
   background: var(--bg-tertiary);
   color: var(--accent);
   border: 1px solid var(--border);
@@ -94,7 +120,6 @@ function copyContent() {
   border-radius: var(--radius-lg);
   max-width: 70%;
   line-height: 1.6;
-  font-size: 15px;
   word-break: break-word;
   position: relative;
 }
@@ -134,6 +159,17 @@ function copyContent() {
 
 .msg-action-btn:hover {
   color: var(--accent);
+}
+
+.delete-msg-btn:hover {
+  color: var(--danger);
+}
+
+.time-stamp {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 4px;
+  opacity: 0.7;
 }
 
 /* Markdown 样式 */
@@ -238,10 +274,12 @@ function copyContent() {
     font-size: 11px;
   }
 
+  .avatar.user {
+    font-size: 16px;
+  }
+
   .bubble {
     max-width: 85%;
-    padding: 10px 12px;
-    font-size: 14px;
   }
 }
 </style>

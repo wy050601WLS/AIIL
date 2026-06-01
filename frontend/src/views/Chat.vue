@@ -1,17 +1,52 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useChatStore } from '../stores/chat'
+import { useUserStore } from '../stores/user'
 import Sidebar from '../components/Sidebar.vue'
 import ChatMessage from '../components/ChatMessage.vue'
 import ChatInput from '../components/ChatInput.vue'
 
 const chatStore = useChatStore()
+const userStore = useUserStore()
 const sidebarVisible = ref(false)
+const searchInputRef = ref(null)
+
+const fontSize = computed(() => userStore.preferences?.fontSize || 15)
 
 onMounted(() => {
   chatStore.loadConversations()
   chatStore.loadModels()
+  document.addEventListener('keydown', handleKeydown)
 })
+
+onUnmounted(() => {
+  document.removeEventListener('keydown', handleKeydown)
+})
+
+function handleKeydown(e) {
+  // Ctrl+N: 新建对话
+  if (e.ctrlKey && e.key === 'n') {
+    e.preventDefault()
+    chatStore.newConversation()
+  }
+  // Ctrl+K: 聚焦搜索
+  if (e.ctrlKey && e.key === 'k') {
+    e.preventDefault()
+    sidebarVisible.value = true
+    setTimeout(() => {
+      document.querySelector('.search-input')?.focus()
+    }, 100)
+  }
+  // Ctrl+Shift+E: 导出
+  if (e.ctrlKey && e.shiftKey && e.key === 'E') {
+    e.preventDefault()
+    chatStore.exportCurrent()
+  }
+  // Escape: 关闭侧边栏
+  if (e.key === 'Escape') {
+    sidebarVisible.value = false
+  }
+}
 
 async function handleSend(content) {
   await chatStore.sendMessage(content)
@@ -19,6 +54,19 @@ async function handleSend(content) {
 
 async function handleRegenerate() {
   await chatStore.regenerate()
+}
+
+async function handleEdit(msg) {
+  // For now, just re-send as a new message
+  // A proper edit would modify the message and re-generate the AI response
+  const newContent = prompt('编辑消息', msg.content)
+  if (newContent && newContent !== msg.content) {
+    await chatStore.editMessage(msg.id, newContent)
+  }
+}
+
+async function handleDelete(msg) {
+  await chatStore.deleteMessage(msg.id)
 }
 </script>
 
@@ -67,12 +115,16 @@ async function handleRegenerate() {
 
         <ChatMessage
           v-for="(msg, i) in chatStore.messages"
-          :key="i"
+          :key="msg.id || i"
           :role="msg.role"
           :content="msg.content"
           :is-last="i === chatStore.messages.length - 1"
           :loading="chatStore.loading"
+          :created-at="msg.created_at"
+          :font-size="fontSize"
           @regenerate="handleRegenerate"
+          @edit="handleEdit(msg)"
+          @delete="handleDelete(msg)"
         />
       </div>
 

@@ -1,5 +1,5 @@
 <script setup>
-import { reactive, ref } from 'vue'
+import { reactive, ref, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import { changePassword } from '../api/auth'
 import { useUserStore } from '../stores/user'
@@ -11,6 +11,22 @@ const formRef = ref(null)
 const loading = ref(false)
 
 const form = reactive({ oldPassword: '', newPassword: '', confirmPassword: '' })
+
+const presetAvatars = [
+  '🧑‍💻', '👨‍🎓', '👩‍🎓', '🧑‍🔬', '👨‍💼', '👩‍💼', '🦊', '🐱',
+  '🐼', '🦉', '🌟', '🎯', '🚀', '💡', '📚', '🎨',
+]
+
+const profileForm = reactive({
+  nickname: userStore.nickname,
+  avatar: userStore.avatar || presetAvatars[0],
+})
+
+const prefForm = reactive({
+  fontSize: userStore.preferences?.fontSize || 15,
+  messageDensity: userStore.preferences?.messageDensity || 'normal',
+  defaultModel: userStore.preferences?.defaultModel || '',
+})
 
 const rules = {
   oldPassword: [{ required: true, message: '请输入旧密码', trigger: 'blur' }],
@@ -44,6 +60,27 @@ async function handleSubmit() {
   }
 }
 
+async function saveProfile() {
+  try {
+    await userStore.saveProfile({
+      nickname: profileForm.nickname,
+      avatar: profileForm.avatar,
+    })
+    ElMessage.success('个人信息已保存')
+  } catch {
+    ElMessage.error('保存失败')
+  }
+}
+
+async function savePreferences() {
+  try {
+    await userStore.saveProfile({ preferences: { ...prefForm } })
+    ElMessage.success('偏好设置已保存')
+  } catch {
+    ElMessage.error('保存失败')
+  }
+}
+
 function goBack() {
   router.push('/')
 }
@@ -57,6 +94,41 @@ function goBack() {
         <h2>用户设置</h2>
       </div>
 
+      <!-- 个人信息 -->
+      <div class="settings-section">
+        <h3>个人信息</h3>
+        <div class="avatar-picker">
+          <div
+            v-for="a in presetAvatars"
+            :key="a"
+            class="avatar-option"
+            :class="{ selected: profileForm.avatar === a }"
+            @click="profileForm.avatar = a"
+          >{{ a }}</div>
+        </div>
+        <el-input v-model="profileForm.nickname" placeholder="昵称（留空则显示用户名）" maxlength="50" />
+        <el-button type="primary" class="save-btn" @click="saveProfile">保存个人信息</el-button>
+      </div>
+
+      <!-- 偏好设置 -->
+      <div class="settings-section">
+        <h3>偏好设置</h3>
+        <div class="pref-item">
+          <label>消息字体大小</label>
+          <el-slider v-model="prefForm.fontSize" :min="12" :max="20" :step="1" show-input />
+        </div>
+        <div class="pref-item">
+          <label>消息密度</label>
+          <el-radio-group v-model="prefForm.messageDensity">
+            <el-radio value="compact">紧凑</el-radio>
+            <el-radio value="normal">正常</el-radio>
+            <el-radio value="relaxed">宽松</el-radio>
+          </el-radio-group>
+        </div>
+        <el-button type="primary" class="save-btn" @click="savePreferences">保存偏好</el-button>
+      </div>
+
+      <!-- 修改密码 -->
       <div class="settings-section">
         <h3>修改密码</h3>
         <el-form ref="formRef" :model="form" :rules="rules">
@@ -75,9 +147,11 @@ function goBack() {
         </el-form>
       </div>
 
+      <!-- 账号信息 -->
       <div class="settings-section">
         <h3>账号信息</h3>
         <p class="info-row">用户名：{{ userStore.username }}</p>
+        <p v-if="userStore.nickname" class="info-row">昵称：{{ userStore.nickname }}</p>
       </div>
     </div>
   </div>
@@ -133,5 +207,51 @@ function goBack() {
 .info-row {
   color: var(--text-secondary);
   font-size: 14px;
+  margin-bottom: 4px;
+}
+
+.avatar-picker {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.avatar-option {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  border-radius: var(--radius-sm);
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: border-color 0.15s;
+  background: var(--bg-tertiary);
+}
+
+.avatar-option:hover {
+  border-color: var(--accent-hover);
+}
+
+.avatar-option.selected {
+  border-color: var(--accent);
+  background: var(--accent-bg);
+}
+
+.save-btn {
+  margin-top: 12px;
+}
+
+.pref-item {
+  margin-bottom: 20px;
+}
+
+.pref-item label {
+  display: block;
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
 }
 </style>

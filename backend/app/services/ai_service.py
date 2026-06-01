@@ -14,14 +14,19 @@ def save_user_message(conversation_id: int, content: str, db: Session) -> None:
     db.commit()
 
 
-def load_history(conversation_id: int, db: Session) -> list[dict]:
+def load_history(conversation_id: int, db: Session) -> tuple[list[dict], Conversation]:
+    conv = db.query(Conversation).filter(Conversation.id == conversation_id).first()
     messages = (
         db.query(Message)
         .filter(Message.conversation_id == conversation_id)
         .order_by(Message.created_at.asc())
         .all()
     )
-    return [{"role": m.role, "content": m.content} for m in messages if m.content]
+    history = []
+    if conv and conv.system_prompt:
+        history.append({"role": "system", "content": conv.system_prompt})
+    history.extend({"role": m.role, "content": m.content} for m in messages if m.content)
+    return history, conv
 
 
 def verify_conversation_owner(conversation_id: int, user: User, db: Session) -> Conversation:

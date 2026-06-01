@@ -4,6 +4,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { useChatStore } from '../stores/chat'
 import { useUserStore } from '../stores/user'
 import { useThemeStore } from '../stores/theme'
+import SystemPromptDialog from './SystemPromptDialog.vue'
 
 defineProps({
   visible: { type: Boolean, default: true },
@@ -17,11 +18,24 @@ const themeStore = useThemeStore()
 const editingId = ref(null)
 const editTitle = ref('')
 const searchQuery = ref('')
+const promptDialogVisible = ref(false)
+const promptConvId = ref(null)
+const promptConvPrompt = ref('')
 
-const filteredConversations = computed(() => {
-  if (!searchQuery.value.trim()) return chatStore.conversations
+const searchFiltered = computed(() => {
+  if (!searchQuery.value.trim()) return null
   const q = searchQuery.value.toLowerCase()
-  return chatStore.conversations.filter(c => c.title.toLowerCase().includes(q))
+  return chatStore.filteredConversations.filter(c => c.title.toLowerCase().includes(q))
+})
+
+const pinnedList = computed(() => {
+  const src = searchFiltered.value ?? chatStore.filteredConversations
+  return src.filter(c => c.pinned)
+})
+
+const normalList = computed(() => {
+  const src = searchFiltered.value ?? chatStore.filteredConversations
+  return src.filter(c => !c.pinned)
 })
 
 async function handleNew() {
@@ -73,6 +87,27 @@ async function handleDelete(conv) {
     // cancelled
   }
 }
+
+async function handlePin(conv) {
+  await chatStore.pin(conv.id)
+  ElMessage.success(conv.pinned ? '已取消置顶' : '已置顶')
+}
+
+async function handleArchive(conv) {
+  await chatStore.archive(conv.id)
+  ElMessage.success(conv.archived ? '已取消归档' : '已归档')
+}
+
+function openPromptDialog(conv) {
+  promptConvId.value = conv.id
+  promptConvPrompt.value = conv.system_prompt || ''
+  promptDialogVisible.value = true
+}
+
+async function savePrompt(prompt) {
+  await chatStore.updateSystemPrompt(promptConvId.value, prompt)
+  ElMessage.success('系统提示词已保存')
+}
 </script>
 
 <template>
@@ -93,39 +128,90 @@ async function handleDelete(conv) {
       />
     </div>
 
+    <div class="archive-toggle">
+      <el-button text size="small" @click="chatStore.toggleShowArchived">
+        {{ chatStore.showArchived ? '返回会话' : '已归档' }}
+      </el-button>
+    </div>
+
     <div class="conversation-list">
-      <div
-        v-for="conv in filteredConversations"
-        :key="conv.id"
-        class="conv-item"
-        :class="{ active: conv.id === chatStore.currentId }"
-        @click="handleSelect(conv.id)"
-      >
-        <template v-if="editingId === conv.id">
-          <input
-            v-model="editTitle"
-            class="edit-input"
-            @blur="confirmRename(conv)"
-            @keyup.enter="confirmRename(conv)"
-            @keyup.escape="editingId = null"
-            autofocus
-          />
-        </template>
-        <template v-else>
-          <span class="conv-title">{{ conv.title }}</span>
-          <div class="conv-actions">
-            <el-button text size="small" class="action-btn" @click.stop="startRename(conv)">重命名</el-button>
-            <el-button text size="small" class="action-btn delete-btn" @click.stop="handleDelete(conv)">删除</el-button>
-          </div>
-        </template>
-      </div>
-      <div v-if="chatStore.conversations.length === 0" class="empty-hint">
-        暂无会话，点击上方开始
+      <!-- 置顶会话 -->
+      <template v-if="pinnedList.length > 0">
+        <div class="group-label">置顶</div>
+        <div
+          v-for="conv in pinnedList"
+          :key="conv.id"
+          class="conv-item"
+          :class="{ active: conv.id === chatStore.currentId }"
+          @click="handleSelect(conv.id)"
+        >
+          <template v-if="editingId === conv.id">
+            <input
+              v-model="editTitle"
+              class="edit-input"
+              @blur="confirmRename(conv)"
+              @keyup.enter="confirmRename(conv)"
+              @keyup.escape="editingId = null"
+              autofocus
+            />
+          </template>
+          <template v-else>
+            <span class="pin-icon">📌</span>
+            <span class="conv-title">{{ conv.title }}</span>
+            <div class="conv-actions">
+              <el-button text size="small" class="action-btn" @click.stop="startRename(conv)">重命名</el-button>
+              <el-button text size="small" class="action-btn" @click.stop="handlePin(conv)">取消置顶</el-button>
+              <el-button text size="small" class="action-btn" @click.stop="openPromptDialog(conv)">提示词</el-button>
+              <el-button text size="small" class="action-btn" @click.stop="handleArchive(conv)">归档</el-button>
+              <el-button text size="small" class="action-btn delete-btn" @click.stop="handleDelete(conv)">删除</el-button>
+            </div>
+          </template>
+        </div>
+      </template>
+
+      <!-- 普通会话 -->
+      <template v-if="normalList.length > 0">
+        <div v-if="pinnedList.length > 0" class="group-label">全部会话</div>
+        <div
+          v-for="conv in normalList"
+          :key="conv.id"
+          class="conv-item"
+          :class="{ active: conv.id === chatStore.currentId }"
+          @click="handleSelect(conv.id)"
+        >
+          <template v-if="editingId === conv.id">
+            <input
+              v-model="editTitle"
+              class="edit-input"
+              @blur="confirmRename(conv)"
+              @keyup.enter="confirmRename(conv)"
+              @keyup.escape="editingId = null"
+              autofocus
+            />
+          </template>
+          <template v-else>
+            <span class="conv-title">{{ conv.title }}</span>
+            <div class="conv-actions">
+              <el-button text size="small" class="action-btn" @click.stop="startRename(conv)">重命名</el-button>
+              <el-button text size="small" class="action-btn" @click.stop="handlePin(conv)">置顶</el-button>
+              <el-button text size="small" class="action-btn" @click.stop="openPromptDialog(conv)">提示词</el-button>
+              <el-button text size="small" class="action-btn" @click.stop="handleArchive(conv)">归档</el-button>
+              <el-button text size="small" class="action-btn delete-btn" @click.stop="handleDelete(conv)">删除</el-button>
+            </div>
+          </template>
+        </div>
+      </template>
+
+      <div v-if="pinnedList.length === 0 && normalList.length === 0" class="empty-hint">
+        {{ chatStore.showArchived ? '没有已归档的会话' : '暂无会话，点击上方开始' }}
       </div>
     </div>
 
     <div class="sidebar-footer">
-      <span class="username">{{ userStore.username }}</span>
+      <div class="user-info">
+        <span v-if="userStore.avatar" class="user-avatar">{{ userStore.avatar }}</span>
+        <span class="username">{{ userStore.displayName }}</span>
+      </div>
       <div class="footer-actions">
         <el-button text size="small" @click="themeStore.toggle">
           {{ themeStore.theme === 'dark' ? '浅色' : '深色' }}
@@ -135,6 +221,12 @@ async function handleDelete(conv) {
       </div>
     </div>
   </aside>
+
+  <SystemPromptDialog
+    v-model:visible="promptDialogVisible"
+    :initial-prompt="promptConvPrompt"
+    @save="savePrompt"
+  />
 </template>
 
 <style scoped>
@@ -201,10 +293,25 @@ async function handleDelete(conv) {
   border-color: var(--accent);
 }
 
+.archive-toggle {
+  padding: 4px 16px;
+  display: flex;
+  justify-content: flex-end;
+}
+
 .conversation-list {
   flex: 1;
   overflow-y: auto;
   padding: 8px;
+}
+
+.group-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 8px 12px 4px;
+  font-weight: 600;
 }
 
 .conv-item {
@@ -214,6 +321,9 @@ async function handleDelete(conv) {
   margin-bottom: 2px;
   transition: background 0.15s;
   position: relative;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .conv-item:hover {
@@ -225,13 +335,19 @@ async function handleDelete(conv) {
   border-left: 3px solid var(--accent);
 }
 
+.pin-icon {
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
 .conv-title {
   font-size: 14px;
   color: var(--text-secondary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  display: block;
+  flex: 1;
+  min-width: 0;
 }
 
 .conv-item.active .conv-title {
@@ -245,18 +361,18 @@ async function handleDelete(conv) {
   top: 50%;
   transform: translateY(-50%);
   gap: 2px;
+  background: var(--bg-secondary);
+  padding: 2px 4px;
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow);
 }
 
 .conv-item:hover .conv-actions {
   display: flex;
 }
 
-.conv-item:hover .conv-title {
-  padding-right: 100px;
-}
-
 .action-btn {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--text-muted);
   padding: 2px 4px;
   height: auto;
@@ -279,6 +395,7 @@ async function handleDelete(conv) {
   font-size: 14px;
   padding: 2px 6px;
   outline: none;
+  flex: 1;
 }
 
 .empty-hint {
@@ -294,6 +411,16 @@ async function handleDelete(conv) {
   display: flex;
   align-items: center;
   justify-content: space-between;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.user-avatar {
+  font-size: 20px;
 }
 
 .username {

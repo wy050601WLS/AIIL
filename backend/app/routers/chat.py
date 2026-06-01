@@ -17,7 +17,7 @@ def chat(data: ChatRequest, user: User = Depends(get_current_user), db: Session 
     verify_conversation_owner(data.conversation_id, user, db)
     save_user_message(data.conversation_id, data.content, db)
 
-    history = load_history(data.conversation_id, db)
+    history, conv = load_history(data.conversation_id, db)
     chunks, full_response = call_ai_api(history, model=data.model)
 
     if full_response:
@@ -68,3 +68,40 @@ def list_models():
         ],
         "default": "mimo-v2.5-pro",
     }
+
+
+@router.put("/messages/{message_id}")
+def edit_message(message_id: int, data: dict, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    msg = db.query(Message).filter(Message.id == message_id).first()
+    if not msg:
+        from fastapi import HTTPException, status
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="消息不存在")
+    conv = db.query(Conversation).filter(
+        Conversation.id == msg.conversation_id,
+        Conversation.user_id == user.id,
+    ).first()
+    if not conv:
+        from fastapi import HTTPException, status
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="无权操作")
+    msg.content = data.get("content", msg.content)
+    db.commit()
+    db.refresh(msg)
+    return {"id": msg.id, "role": msg.role, "content": msg.content, "created_at": str(msg.created_at)}
+
+
+@router.delete("/messages/{message_id}")
+def delete_message(message_id: int, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    msg = db.query(Message).filter(Message.id == message_id).first()
+    if not msg:
+        from fastapi import HTTPException, status
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="消息不存在")
+    conv = db.query(Conversation).filter(
+        Conversation.id == msg.conversation_id,
+        Conversation.user_id == user.id,
+    ).first()
+    if not conv:
+        from fastapi import HTTPException, status
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="无权操作")
+    db.delete(msg)
+    db.commit()
+    return {"message": "消息已删除"}

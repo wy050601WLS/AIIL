@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Optional
 
 from pydantic import BaseModel, Field
 
@@ -14,6 +15,9 @@ class ConversationUpdate(BaseModel):
 class ConversationResponse(BaseModel):
     id: int
     title: str
+    pinned: bool = False
+    archived: bool = False
+    system_prompt: Optional[str] = None
     created_at: datetime
 
     model_config = {"from_attributes": True}
@@ -32,3 +36,7 @@ class ChatRequest(BaseModel):
     conversation_id: int
     content: str = Field(..., min_length=1)
     model: str | None = None
+
+
+class SystemPromptUpdate(BaseModel):
+    system_prompt: Optional[str] = None

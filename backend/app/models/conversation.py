@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Enum
+from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Enum, Boolean
 from sqlalchemy.orm import relationship
 
 from app.database import Base
@@ -12,6 +12,9 @@ class Conversation(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     title = Column(String(100), default="新对话")
+    pinned = Column(Boolean, default=False)
+    archived = Column(Boolean, default=False)
+    system_prompt = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.now)
 
     messages = relationship("Message", back_populates="conversation", cascade="all, delete-orphan")

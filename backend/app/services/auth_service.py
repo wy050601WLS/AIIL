@@ -32,3 +32,15 @@ def change_password(user: User, old_password: str, new_password: str, db: Sessio
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="旧密码错误")
     user.password_hash = hash_password(new_password)
     db.commit()
+
+
+def update_profile(user: User, nickname: str | None, avatar: str | None, preferences: str | None, db: Session) -> UserResponse:
+    if nickname is not None:
+        user.nickname = nickname
+    if avatar is not None:
+        user.avatar = avatar
+    if preferences is not None:
+        user.preferences = preferences
+    db.commit()
+    db.refresh(user)
+    return UserResponse.model_validate(user)
