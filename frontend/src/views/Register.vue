@@ -31,7 +31,11 @@ const rules = {
 }
 
 async function handleRegister() {
-  await formRef.value.validate()
+  try {
+    await formRef.value.validate()
+  } catch {
+    return
+  }
   loading.value = true
   try {
     await userStore.register(form)
