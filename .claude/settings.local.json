@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mysql *)",
+      "WebSearch",
+      "Bash(curl -s https://token-plan-cn.xiaomimimo.com/v1/chat/completions -H 'Authorization: Bearer tp-cc68pv0gzvepijxhk0tn8r67sa8964hdxurthg4j3k23b5k6' -H 'Content-Type: application/json' -d '{\"model\":\"mimo\",\"messages\":[{\"role\":\"user\",\"content\":\"hi\"}],\"max_tokens\":50}' --max-time 10)",
+      "Bash(curl -s https://token-plan-cn.xiaomimimo.com/anthropic/v1/chat/completions -H 'Authorization: Bearer tp-cc68pv0gzvepijxhk0tn8r67sa8964hdxurthg4j3k23b5k6' -H 'Content-Type: application/json' -d '{\"model\":\"mimo\",\"messages\":[{\"role\":\"user\",\"content\":\"hi\"}],\"max_tokens\":50}' --max-time 10)",
+      "Bash(taskkill //F //PID 24032)"
+    ]
+  }
+}
