@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useChatStore } from '../stores/chat'
 import { useUserStore } from '../stores/user'
@@ -16,6 +16,13 @@ const themeStore = useThemeStore()
 
 const editingId = ref(null)
 const editTitle = ref('')
+const searchQuery = ref('')
+
+const filteredConversations = computed(() => {
+  if (!searchQuery.value.trim()) return chatStore.conversations
+  const q = searchQuery.value.toLowerCase()
+  return chatStore.conversations.filter(c => c.title.toLowerCase().includes(q))
+})
 
 async function handleNew() {
   await chatStore.newConversation()
@@ -78,9 +85,17 @@ async function handleDelete(conv) {
       </el-button>
     </div>
 
+    <div class="search-box">
+      <input
+        v-model="searchQuery"
+        class="search-input"
+        placeholder="搜索会话..."
+      />
+    </div>
+
     <div class="conversation-list">
       <div
-        v-for="conv in chatStore.conversations"
+        v-for="conv in filteredConversations"
         :key="conv.id"
         class="conv-item"
         :class="{ active: conv.id === chatStore.currentId }"
@@ -160,6 +175,29 @@ async function handleDelete(conv) {
 
 .new-btn:hover {
   background: var(--bg-hover);
+  border-color: var(--accent);
+}
+
+.search-box {
+  padding: 8px 16px 0;
+}
+
+.search-input {
+  width: 100%;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: 13px;
+  padding: 6px 10px;
+  outline: none;
+}
+
+.search-input::placeholder {
+  color: var(--text-muted);
+}
+
+.search-input:focus {
   border-color: var(--accent);
 }
 
