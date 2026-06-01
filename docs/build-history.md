@@ -346,3 +346,63 @@
 | 执行工作 | 更新 ci.yml 添加测试步骤 |
 | 实现手段 | GitHub Actions，push/PR 触发后端测试 |
 | 新增功能 | CI 流程包含后端单元测试 |
+
+---
+
+## 第二轮功能扩展（用户功能 + 对话体验）
+
+### F-12：用户头像 + 昵称
+
+| 维度 | 内容 |
+|------|------|
+| 执行工作 | User 模型新增 nickname/avatar/preferences 字段，后端 PUT /auth/profile 端点，前端设置页头像选择器+昵称输入 |
+| 实现手段 | SQLAlchemy 新增字段，auth_service.update_profile，16 个预设 emoji 头像 |
+| 新增功能 | 用户可选择预设头像和编辑昵称，侧边栏底部和消息气泡显示用户头像 |
+
+### F-13：用户偏好设置
+
+| 维度 | 内容 |
+|------|------|
+| 执行工作 | User 模型 preferences 字段（JSON 字符串），前端设置页偏好配置区 |
+| 实现手段 | JSON 序列化存储，Pinia store 管理偏好状态 |
+| 新增功能 | 字体大小滑块（12-20px）、消息密度选择（舒适/紧凑），全局应用偏好 |
+
+### F-14：消息时间戳
+
+| 维度 | 内容 |
+|------|------|
+| 执行工作 | ChatMessage 组件添加时间显示 |
+| 实现手段 | 格式化 created_at 字段为 HH:MM |
+| 新增功能 | 每条消息下方显示发送时间 |
+
+### F-15：消息编辑/删除
+
+| 维度 | 内容 |
+|------|------|
+| 执行工作 | 后端 PUT/DELETE /messages/{id} 端点，前端消息 hover 操作栏 |
+| 实现手段 | FastAPI 端点 + 会话所有权校验，ChatMessage 组件操作按钮 |
+| 新增功能 | 用户消息可编辑，所有消息可删除 |
+
+### F-16：会话置顶 + 归档
+
+| 维度 | 内容 |
+|------|------|
+| 执行工作 | Conversation 模型新增 pinned/archived 字段，后端 pin/archive 端点，侧边栏分组显示 |
+| 实现手段 | Boolean 字段 + toggle 端点，computed 属性分组排序 |
+| 新增功能 | 会话置顶（置顶区在前）、会话归档（独立归档视图），置顶图标标识 |
+
+### F-17：系统提示词
+
+| 维度 | 内容 |
+|------|------|
+| 执行工作 | Conversation 模型新增 system_prompt 字段，后端端点 + SystemPromptDialog 组件 |
+| 实现手段 | Text 字段存储，load_history 注入首条 system message |
+| 新增功能 | 每个会话可设置独立系统提示词，影响 AI 回答风格和行为 |
+
+### F-18：键盘快捷键
+
+| 维度 | 内容 |
+|------|------|
+| 执行工作 | Chat.vue 添加全局 keydown 监听 |
+| 实现手段 | onMounted/onUnmounted 生命周期管理事件监听 |
+| 新增功能 | Ctrl+N 新建对话、Ctrl+K 聚焦搜索、Ctrl+Shift+E 导出对话、Escape 关闭侧边栏 |
