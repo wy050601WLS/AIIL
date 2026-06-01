@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { useChatStore } from '../stores/chat'
 import { useUserStore } from '../stores/user'
 import Sidebar from '../components/Sidebar.vue'
@@ -9,9 +9,20 @@ import ChatInput from '../components/ChatInput.vue'
 const chatStore = useChatStore()
 const userStore = useUserStore()
 const sidebarVisible = ref(false)
-const searchInputRef = ref(null)
+const messagesAreaRef = ref(null)
 
 const fontSize = computed(() => userStore.preferences?.fontSize || 15)
+
+function scrollToBottom() {
+  nextTick(() => {
+    if (messagesAreaRef.value) {
+      messagesAreaRef.value.scrollTop = messagesAreaRef.value.scrollHeight
+    }
+  })
+}
+
+watch(() => chatStore.messages.length, scrollToBottom)
+watch(() => chatStore.messages[chatStore.messages.length - 1]?.content, scrollToBottom)
 
 onMounted(() => {
   chatStore.loadConversations()
@@ -107,7 +118,7 @@ async function handleDelete(msg) {
         </div>
       </div>
 
-      <div class="messages-area">
+      <div ref="messagesAreaRef" class="messages-area">
         <div v-if="chatStore.messages.length === 0" class="welcome">
           <h2>有什么可以帮你的？</h2>
           <p>输入你的问题，AI 将为你解答</p>
