@@ -1,7 +1,21 @@
-<script setup>
-import { computed } from 'vue'
+<script>
 import { marked } from 'marked'
 import hljs from 'highlight.js'
+
+marked.setOptions({
+  highlight(code, lang) {
+    if (lang && hljs.getLanguage(lang)) {
+      return hljs.highlight(code, { language: lang }).value
+    }
+    return hljs.highlightAuto(code).value
+  },
+  breaks: true,
+  gfm: true,
+})
+</script>
+
+<script setup>
+import { computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import { useUserStore } from '../stores/user'
 
