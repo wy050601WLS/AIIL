@@ -26,7 +26,7 @@
 |------|------|
 | 执行工作 | 创建 `backend/app/` 目录及子目录，创建 `requirements.txt` |
 | 实现手段 | mkdir + 手写 requirements.txt |
-| 新增功能 | 后端项目骨架，依赖：fastapi, uvicorn, sqlalchemy, pymysql, python-jose, bcrypt, python-dotenv, anthropic |
+| 新增功能 | 后端项目骨架，依赖：fastapi, uvicorn, sqlalchemy, pymysql, python-jose, bcrypt, python-dotenv, httpx |
 | 移除功能 | 无 |
 | 调整功能 | 原 passlib[bcrypt] 替换为 bcrypt>=4.0.0（兼容性问题） |
 
@@ -115,7 +115,7 @@
 | 维度 | 内容 |
 |------|------|
 | 执行工作 | 创建 `backend/app/routers/chat.py` 和 `backend/app/services/ai_service.py` |
-| 实现手段 | Anthropic SDK 流式调用 MiMo API，SSE StreamingResponse，用户消息和助手回复持久化到数据库 |
+| 实现手段 | httpx 流式调用 MiMo API（OpenAI 兼容格式），SSE StreamingResponse，用户消息和助手回复持久化到数据库 |
 | 新增功能 | POST /chat 端点，流式 AI 对话，自动保存对话历史，会话所有权校验 |
 | 移除功能 | 无 |
 | 调整功能 | 无 |
@@ -210,6 +210,28 @@
 | 移除功能 | 无 |
 | 调整功能 | 无 |
 
+## E-2：Git 提交与推送
+
+| 维度 | 内容 |
+|------|------|
+| 执行工作 | 将所有代码提交到 Git 仓库并推送到远程 |
+| 实现手段 | git add + git commit + git push |
+| 新增功能 | 代码版本管理，2 个 commit（主功能 + CI 调整） |
+| 移除功能 | CI 工作流文件因 GitHub token 缺少 workflow 权限暂时从 Git 移除（文件保留在本地） |
+| 调整功能 | 无 |
+
+## E-3：历程文档归档
+
+| 维度 | 内容 |
+|------|------|
+| 执行工作 | 完善 docs/build-history.md，修正不准确记录，补全所有任务变更 |
+| 实现手段 | 逐项核对实际实现与文档记录的一致性 |
+| 新增功能 | 无 |
+| 移除功能 | 无 |
+| 调整功能 | 修正 A-2 依赖列表（anthropic→httpx），修正 C-7 实现手段（Anthropic SDK→httpx），补全 E-2/E-3 记录 |
+
+---
+
 ### E-1 测试结果
 
 | 端点 | 结果 |
@@ -224,7 +246,11 @@
 
 ---
 
-## 待执行任务
+## 项目完成
 
-- E-2：Git 提交与推送
-- E-3：历程文档归档
+所有任务（A-1 ~ E-3 + CI-1）已完成。系统包含：
+
+- **后端**：FastAPI + MySQL + JWT 认证 + MiMo AI 流式对话
+- **前端**：Vue3 + Element Plus 科技深色主题 + SSE 流式渲染
+- **CI/CD**：GitHub Actions 工作流（待推送）
+- **文档**：项目计划 + 全周期构建历程
