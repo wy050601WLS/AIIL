@@ -26,6 +26,26 @@
   --radius-xl: 20px;
 }
 
+:root.light {
+  --bg-primary: #f5f5f7;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #eaeaef;
+  --bg-hover: #e8e8ed;
+  --text-primary: #1d1d1f;
+  --text-secondary: #6e6e73;
+  --text-muted: #aeaeb2;
+  --accent: #6366f1;
+  --accent-hover: #4f46e5;
+  --accent-bg: rgba(99, 102, 241, 0.1);
+  --border: #d2d2d7;
+  --border-light: #e5e5ea;
+  --success: #16a34a;
+  --danger: #dc2626;
+  --user-bubble: #6366f1;
+  --assistant-bubble: #f0f0f5;
+  --shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -61,7 +81,7 @@ body {
   background: var(--border-light);
 }
 
-/* Element Plus 深色覆盖 */
+/* Element Plus 覆盖 */
 .el-button--primary {
   --el-button-bg-color: var(--accent);
   --el-button-border-color: var(--accent);
@@ -83,5 +103,18 @@ body {
 }
 
 .el-form-item__label {
+  color: var(--text-secondary) !important;
+}
+
+.el-message-box {
+  background: var(--bg-secondary) !important;
+  border-color: var(--border) !important;
+}
+
+.el-message-box__title {
+  color: var(--text-primary) !important;
+}
+
+.el-message-box__content {
   color: var(--text-secondary) !important;
 }

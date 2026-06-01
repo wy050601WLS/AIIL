@@ -1,9 +1,11 @@
 <script setup>
 import { useChatStore } from '../stores/chat'
 import { useUserStore } from '../stores/user'
+import { useThemeStore } from '../stores/theme'
 
 const chatStore = useChatStore()
 const userStore = useUserStore()
+const themeStore = useThemeStore()
 
 async function handleNew() {
   await chatStore.newConversation()
@@ -49,6 +51,9 @@ function goSettings() {
     <div class="sidebar-footer">
       <span class="username">{{ userStore.username }}</span>
       <div class="footer-actions">
+        <el-button text size="small" @click="themeStore.toggle">
+          {{ themeStore.theme === 'dark' ? '浅色' : '深色' }}
+        </el-button>
         <el-button text size="small" @click="goSettings">设置</el-button>
         <el-button text size="small" @click="handleLogout">退出</el-button>
       </div>
