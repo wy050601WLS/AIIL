@@ -116,4 +116,18 @@ function handleKeydown(e) {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.3; }
 }
+
+@media (max-width: 768px) {
+  .input-area {
+    padding: 12px 16px 16px;
+  }
+
+  .input-wrapper {
+    padding: 10px 12px;
+  }
+
+  .input-box {
+    font-size: 16px; /* prevent iOS zoom */
+  }
+}
 </style>

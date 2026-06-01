@@ -224,4 +224,24 @@ function copyContent() {
   border-top: 1px solid var(--border);
   margin: 16px 0;
 }
+
+@media (max-width: 768px) {
+  .message-row {
+    padding: 8px 16px;
+    gap: 8px;
+  }
+
+  .avatar {
+    width: 30px;
+    height: 30px;
+    min-width: 30px;
+    font-size: 11px;
+  }
+
+  .bubble {
+    max-width: 85%;
+    padding: 10px 12px;
+    font-size: 14px;
+  }
+}
 </style>

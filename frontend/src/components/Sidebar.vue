@@ -5,6 +5,11 @@ import { useChatStore } from '../stores/chat'
 import { useUserStore } from '../stores/user'
 import { useThemeStore } from '../stores/theme'
 
+defineProps({
+  visible: { type: Boolean, default: true },
+})
+const emit = defineEmits(['close'])
+
 const chatStore = useChatStore()
 const userStore = useUserStore()
 const themeStore = useThemeStore()
@@ -14,11 +19,13 @@ const editTitle = ref('')
 
 async function handleNew() {
   await chatStore.newConversation()
+  emit('close')
 }
 
 async function handleSelect(id) {
   if (editingId.value === id) return
   await chatStore.selectConversation(id)
+  emit('close')
 }
 
 function handleLogout() {
@@ -62,7 +69,8 @@ async function handleDelete(conv) {
 </script>
 
 <template>
-  <aside class="sidebar">
+  <div class="sidebar-overlay" :class="{ visible }" @click="emit('close')"></div>
+  <aside class="sidebar" :class="{ visible }">
     <div class="sidebar-header">
       <h2 class="logo">AI 智慧学习</h2>
       <el-button type="primary" text class="new-btn" @click="handleNew">
@@ -115,6 +123,10 @@ async function handleDelete(conv) {
 </template>
 
 <style scoped>
+.sidebar-overlay {
+  display: none;
+}
+
 .sidebar {
   width: 260px;
   min-width: 260px;
@@ -254,5 +266,43 @@ async function handleDelete(conv) {
 .footer-actions {
   display: flex;
   gap: 4px;
+}
+
+/* 移动端 */
+@media (max-width: 768px) {
+  .sidebar-overlay {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 100;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s;
+  }
+
+  .sidebar-overlay.visible {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    z-index: 101;
+    transform: translateX(-100%);
+    transition: transform 0.2s;
+    width: 280px;
+    min-width: 280px;
+  }
+
+  .sidebar.visible {
+    transform: translateX(0);
+  }
+
+  .conv-item:hover .conv-actions {
+    display: none;
+  }
 }
 </style>

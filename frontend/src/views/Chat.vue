@@ -1,11 +1,12 @@
 <script setup>
-import { onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useChatStore } from '../stores/chat'
 import Sidebar from '../components/Sidebar.vue'
 import ChatMessage from '../components/ChatMessage.vue'
 import ChatInput from '../components/ChatInput.vue'
 
 const chatStore = useChatStore()
+const sidebarVisible = ref(false)
 
 onMounted(() => {
   chatStore.loadConversations()
@@ -23,11 +24,16 @@ async function handleRegenerate() {
 
 <template>
   <div class="chat-layout">
-    <Sidebar />
+    <Sidebar :visible="sidebarVisible" @close="sidebarVisible = false" />
 
     <main class="chat-main">
       <div class="chat-header">
         <div class="header-left">
+          <el-button class="menu-btn" text @click="sidebarVisible = true">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M3 12h18M3 6h18M3 18h18" />
+            </svg>
+          </el-button>
           <el-select
             v-if="chatStore.models.length > 0"
             :model-value="chatStore.currentModel"
@@ -97,6 +103,18 @@ async function handleRegenerate() {
   background: var(--bg-secondary);
 }
 
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.menu-btn {
+  display: none;
+  color: var(--text-secondary);
+  padding: 4px;
+}
+
 .model-select {
   width: 180px;
 }
@@ -124,5 +142,20 @@ async function handleRegenerate() {
 
 .welcome p {
   font-size: 14px;
+}
+
+/* 移动端 */
+@media (max-width: 768px) {
+  .menu-btn {
+    display: block;
+  }
+
+  .model-select {
+    width: 140px;
+  }
+
+  .messages-area {
+    padding: 16px 0;
+  }
 }
 </style>
