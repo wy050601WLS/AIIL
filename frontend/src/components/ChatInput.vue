@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, nextTick } from 'vue'
 
 defineProps({
   loading: { type: Boolean, default: false },
@@ -7,12 +7,23 @@ defineProps({
 
 const emit = defineEmits(['send'])
 const input = ref('')
+const textareaRef = ref(null)
+
+function autoResize() {
+  const el = textareaRef.value
+  if (!el) return
+  el.style.height = 'auto'
+  el.style.height = Math.min(el.scrollHeight, 150) + 'px'
+}
 
 function handleSend() {
   const text = input.value.trim()
   if (!text) return
   emit('send', text)
   input.value = ''
+  nextTick(() => {
+    if (textareaRef.value) textareaRef.value.style.height = 'auto'
+  })
 }
 
 function handleKeydown(e) {
@@ -27,11 +38,13 @@ function handleKeydown(e) {
   <div class="input-area">
     <div class="input-wrapper">
       <textarea
+        ref="textareaRef"
         v-model="input"
         class="input-box"
         placeholder="输入你的问题... (Enter 发送，Shift+Enter 换行)"
         rows="1"
         :disabled="loading"
+        @input="autoResize"
         @keydown="handleKeydown"
       ></textarea>
       <button
