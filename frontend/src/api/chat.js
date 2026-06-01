@@ -14,37 +14,47 @@ export function getMessages(conversationId) {
 
 export async function streamChat(conversationId, content, onToken, onDone) {
   const token = localStorage.getItem('token')
-  const res = await fetch('/api/chat', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify({ conversation_id: conversationId, content }),
-  })
+  try {
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ conversation_id: conversationId, content }),
+    })
 
-  const reader = res.body.getReader()
-  const decoder = new TextDecoder()
-  let buffer = ''
+    if (!res.ok) {
+      onDone?.()
+      return
+    }
 
-  while (true) {
-    const { done, value } = await reader.read()
-    if (done) break
+    const reader = res.body.getReader()
+    const decoder = new TextDecoder()
+    let buffer = ''
 
-    buffer += decoder.decode(value, { stream: true })
-    const lines = buffer.split('\n')
-    buffer = lines.pop()
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
 
-    for (const line of lines) {
-      if (line.startsWith('data: ')) {
-        const data = line.slice(6)
-        if (data === '[DONE]') {
-          onDone?.()
-          return
+      buffer += decoder.decode(value, { stream: true })
+      const lines = buffer.split('\n')
+      buffer = lines.pop()
+
+      for (const line of lines) {
+        if (line.startsWith('data: ')) {
+          const data = line.slice(6)
+          if (data === '[DONE]') {
+            onDone?.()
+            return
+          }
+          if (data) onToken(data)
         }
-        onToken(data)
       }
     }
+  } catch {
+    // stream interrupted
+  } finally {
+    onDone?.()
   }
-  onDone?.()
 }
