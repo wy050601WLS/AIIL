@@ -123,8 +123,8 @@ async function handleDelete(msg) {
           :created-at="msg.created_at"
           :font-size="fontSize"
           @regenerate="handleRegenerate"
-          @edit="handleEdit(msg)"
-          @delete="handleDelete(msg)"
+          @edit="() => handleEdit(msg)"
+          @delete="() => handleDelete(msg)"
         />
       </div>
 
