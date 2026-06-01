@@ -35,14 +35,14 @@ def verify_conversation_owner(conversation_id: int, user: User, db: Session) -> 
     return conv
 
 
-def call_ai_api(history: list[dict]) -> tuple[list[str], str]:
+def call_ai_api(history: list[dict], model: str | None = None) -> tuple[list[str], str]:
     url = f"{settings.AI_BASE_URL}/v1/chat/completions"
     headers = {
         "Authorization": f"Bearer {settings.AI_API_KEY}",
         "Content-Type": "application/json",
     }
     payload = {
-        "model": settings.AI_MODEL,
+        "model": model or settings.AI_MODEL,
         "max_tokens": 4096,
         "stream": True,
         "messages": history,

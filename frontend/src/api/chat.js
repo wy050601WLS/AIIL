@@ -20,7 +20,25 @@ export function deleteConversation(conversationId) {
   return api.delete(`/conversations/${conversationId}`)
 }
 
-export async function streamChat(conversationId, content, onToken, onDone) {
+export function getModels() {
+  return api.get('/models')
+}
+
+export async function exportConversation(conversationId) {
+  const token = localStorage.getItem('token')
+  const res = await fetch(`/api/conversations/${conversationId}/export`, {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  const blob = await res.blob()
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `conversation-${conversationId}.md`
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
+export async function streamChat(conversationId, content, onToken, onDone, model) {
   const token = localStorage.getItem('token')
   try {
     const res = await fetch('/api/chat', {
@@ -29,7 +47,7 @@ export async function streamChat(conversationId, content, onToken, onDone) {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({ conversation_id: conversationId, content }),
+      body: JSON.stringify({ conversation_id: conversationId, content, model }),
     })
 
     if (!res.ok) {

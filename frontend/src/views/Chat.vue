@@ -9,6 +9,7 @@ const chatStore = useChatStore()
 
 onMounted(() => {
   chatStore.loadConversations()
+  chatStore.loadModels()
 })
 
 async function handleSend(content) {
@@ -25,6 +26,33 @@ async function handleRegenerate() {
     <Sidebar />
 
     <main class="chat-main">
+      <div class="chat-header">
+        <div class="header-left">
+          <el-select
+            v-if="chatStore.models.length > 0"
+            :model-value="chatStore.currentModel"
+            size="small"
+            class="model-select"
+            @update:model-value="chatStore.setModel"
+          >
+            <el-option
+              v-for="m in chatStore.models"
+              :key="m.id"
+              :label="m.name"
+              :value="m.id"
+            />
+          </el-select>
+        </div>
+        <div class="header-right">
+          <el-button
+            v-if="chatStore.currentId"
+            text
+            size="small"
+            @click="chatStore.exportCurrent"
+          >导出</el-button>
+        </div>
+      </div>
+
       <div class="messages-area">
         <div v-if="chatStore.messages.length === 0" class="welcome">
           <h2>有什么可以帮你的？</h2>
@@ -58,6 +86,19 @@ async function handleRegenerate() {
   display: flex;
   flex-direction: column;
   min-width: 0;
+}
+
+.chat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 24px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-secondary);
+}
+
+.model-select {
+  width: 180px;
 }
 
 .messages-area {

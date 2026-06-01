@@ -1,12 +1,31 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { createConversation, getConversations, getMessages, streamChat, renameConversation, deleteConversation } from '../api/chat'
+import { createConversation, getConversations, getMessages, streamChat, renameConversation, deleteConversation, getModels, exportConversation } from '../api/chat'
 
 export const useChatStore = defineStore('chat', () => {
   const conversations = ref([])
   const currentId = ref(null)
   const messages = ref([])
   const loading = ref(false)
+  const models = ref([])
+  const currentModel = ref(localStorage.getItem('model') || '')
+
+  async function loadModels() {
+    try {
+      const { data } = await getModels()
+      models.value = data.models
+      if (!currentModel.value && data.default) {
+        currentModel.value = data.default
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  function setModel(modelId) {
+    currentModel.value = modelId
+    localStorage.setItem('model', modelId)
+  }
 
   async function loadConversations() {
     const { data } = await getConversations()
@@ -43,7 +62,8 @@ export const useChatStore = defineStore('chat', () => {
         currentId.value,
         content,
         (token) => { messages.value[idx].content += token },
-        () => { loading.value = false }
+        () => { loading.value = false },
+        currentModel.value || undefined,
       )
     } catch {
       loading.value = false
@@ -52,15 +72,12 @@ export const useChatStore = defineStore('chat', () => {
 
   async function regenerate() {
     if (!currentId.value || loading.value) return
-    // find last user message
     const lastUserIdx = [...messages.value].reverse().findIndex(m => m.role === 'user')
     if (lastUserIdx === -1) return
     const lastUserContent = messages.value[messages.value.length - 1 - lastUserIdx].content
-    // remove last assistant message
     if (messages.value[messages.value.length - 1].role === 'assistant') {
       messages.value.pop()
     }
-    // re-send
     const idx = messages.value.length
     messages.value.push({ role: 'assistant', content: '', created_at: new Date().toISOString() })
     loading.value = true
@@ -69,7 +86,8 @@ export const useChatStore = defineStore('chat', () => {
         currentId.value,
         lastUserContent,
         (token) => { messages.value[idx].content += token },
-        () => { loading.value = false }
+        () => { loading.value = false },
+        currentModel.value || undefined,
       )
     } catch {
       loading.value = false
@@ -91,5 +109,14 @@ export const useChatStore = defineStore('chat', () => {
     }
   }
 
-  return { conversations, currentId, messages, loading, loadConversations, newConversation, selectConversation, sendMessage, rename, remove, regenerate }
+  async function exportCurrent() {
+    if (!currentId.value) return
+    await exportConversation(currentId.value)
+  }
+
+  return {
+    conversations, currentId, messages, loading, models, currentModel,
+    loadConversations, newConversation, selectConversation, sendMessage,
+    rename, remove, regenerate, loadModels, setModel, exportCurrent,
+  }
 })
