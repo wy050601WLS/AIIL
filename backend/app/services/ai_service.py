@@ -23,8 +23,8 @@ def load_history(conversation_id: int, db: Session) -> tuple[list[dict], Convers
         .all()
     )
     history = []
-    if conv and conv.system_prompt:
-        history.append({"role": "system", "content": conv.system_prompt})
+    system_prompt = (conv.system_prompt if conv and conv.system_prompt else settings.DEFAULT_SYSTEM_PROMPT)
+    history.append({"role": "system", "content": system_prompt})
     history.extend({"role": m.role, "content": m.content} for m in messages if m.content)
     return history, conv
 

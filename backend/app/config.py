@@ -26,6 +26,15 @@ class Settings:
     AI_BASE_URL: str = os.getenv("AI_BASE_URL", "https://token-plan-cn.xiaomimimo.com/anthropic")
     AI_MODEL: str = os.getenv("AI_MODEL", "claude-sonnet-4-20250514")
 
+    # Default system prompt
+    DEFAULT_SYSTEM_PROMPT: str = os.getenv(
+        "DEFAULT_SYSTEM_PROMPT",
+        "你是「AI 智慧学习」系统的学习助手。你的职责是帮助用户学习知识、解答学习中遇到的问题。"
+        "请围绕学习场景提供准确、有条理的回答，适当使用举例、类比和分步骤讲解来帮助理解。"
+        "如果用户提出与学习无关的问题，请礼貌地引导回学习话题。"
+        "回答请使用中文，除非用户明确要求使用其他语言。",
+    )
+
     # Server
     HOST: str = os.getenv("HOST", "0.0.0.0")
     PORT: int = int(os.getenv("PORT", "8000"))
