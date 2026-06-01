@@ -254,3 +254,95 @@
 - **前端**：Vue3 + Element Plus 科技深色主题 + SSE 流式渲染
 - **CI/CD**：GitHub Actions 工作流（待推送）
 - **文档**：项目计划 + 全周期构建历程
+
+---
+
+## 功能扩展阶段
+
+### F-1：用户设置（修改密码）
+
+| 维度 | 内容 |
+|------|------|
+| 执行工作 | 后端添加 PUT /auth/password 端点，前端新增 Settings.vue 页面 |
+| 实现手段 | FastAPI 端点 + auth_service.change_password，Vue3 表单 + Element Plus 验证 |
+| 新增功能 | 修改密码页面，旧密码验证 + 新密码设置，修改成功后自动退出登录 |
+
+### F-2：深色/浅色主题切换
+
+| 维度 | 内容 |
+|------|------|
+| 执行工作 | 添加 .light CSS 类覆盖主题变量，创建 theme store |
+| 实现手段 | CSS 变量 + Pinia store + localStorage 持久化 |
+| 新增功能 | 浅色主题配色，侧边栏主题切换按钮，刷新后保持选择 |
+
+### F-3：Markdown 渲染 + 代码高亮
+
+| 维度 | 内容 |
+|------|------|
+| 执行工作 | 安装 marked + highlight.js，重写 ChatMessage 组件 |
+| 实现手段 | marked 解析 Markdown，highlight.js 语法高亮，v-html 渲染 |
+| 新增功能 | AI 消息支持标题、列表、表格、引用、代码块等 Markdown 格式 |
+
+### F-4：会话重命名/删除
+
+| 维度 | 内容 |
+|------|------|
+| 执行工作 | 后端添加 PUT/DELETE /conversations/{id}，前端侧边栏添加操作按钮 |
+| 实现手段 | FastAPI 端点 + chat_service，hover 显示操作按钮，内联编辑标题 |
+| 新增功能 | 会话重命名（内联编辑），会话删除（确认对话框） |
+
+### F-5：消息复制/重新生成
+
+| 维度 | 内容 |
+|------|------|
+| 执行工作 | ChatMessage 组件添加操作按钮，chat store 添加 regenerate 方法 |
+| 实现手段 | navigator.clipboard API 复制，重新发送最后一条用户消息 |
+| 新增功能 | 消息复制到剪贴板，最后一条 AI 消息支持重新生成 |
+
+### F-6：对话导出 + 多模型切换
+
+| 维度 | 内容 |
+|------|------|
+| 执行工作 | 后端添加 GET /models 和 GET /conversations/{id}/export，前端添加模型选择器和导出按钮 |
+| 实现手段 | FastAPI PlainTextResponse 导出 Markdown，前端 Blob 下载 |
+| 新增功能 | 模型选择器（支持动态模型列表），导出对话为 Markdown 文件 |
+
+### F-7：移动端响应式优化
+
+| 维度 | 内容 |
+|------|------|
+| 执行工作 | 侧边栏改为抽屉式，聊天区域和输入组件适配小屏 |
+| 实现手段 | CSS 媒体查询 + 汉堡菜单按钮 + overlay 遮罩 |
+| 新增功能 | 移动端侧边栏抽屉，响应式布局适配 375px+ |
+
+### F-8：侧边栏会话搜索
+
+| 维度 | 内容 |
+|------|------|
+| 执行工作 | 侧边栏添加搜索输入框 |
+| 实现手段 | computed 属性实时过滤会话列表 |
+| 新增功能 | 按标题关键词搜索会话 |
+
+### F-9：Docker 容器化部署
+
+| 维度 | 内容 |
+|------|------|
+| 执行工作 | 创建 backend/Dockerfile、frontend/Dockerfile、docker-compose.yml |
+| 实现手段 | 多阶段构建（Node 构建 + Nginx 服务），docker-compose 编排三个服务 |
+| 新增功能 | 一键 docker-compose up 启动完整系统（MySQL + Backend + Frontend） |
+
+### F-10：后端单元测试
+
+| 维度 | 内容 |
+|------|------|
+| 执行工作 | 创建 backend/tests/ 目录，编写认证和会话 API 测试 |
+| 实现手段 | pytest + FastAPI TestClient + SQLite 内存数据库 |
+| 新增功能 | 8 个测试用例覆盖用户注册/登录/会话 CRUD |
+
+### F-11：CI/CD 工作流更新
+
+| 维度 | 内容 |
+|------|------|
+| 执行工作 | 更新 ci.yml 添加测试步骤 |
+| 实现手段 | GitHub Actions，push/PR 触发后端测试 |
+| 新增功能 | CI 流程包含后端单元测试 |
