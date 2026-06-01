@@ -255,6 +255,14 @@
 - **CI/CD**：GitHub Actions 工作流（待推送）
 - **文档**：项目计划 + 全周期构建历程
 
+### 功能扩展记录
+
+| 阶段 | 内容 | 任务数 |
+|------|------|--------|
+| 第一轮扩展（F-1 ~ F-11） | 密码修改、主题切换、Markdown 渲染、会话重命名/删除、消息复制/重新生成、对话导出+模型切换、移动端适配、会话搜索、Docker 部署、单元测试、CI 更新 | 11 |
+| 第二轮扩展（F-12 ~ F-20） | 用户头像+昵称、偏好设置、消息时间戳、消息编辑/删除、会话置顶+归档、系统提示词、键盘快捷键、默认学习提示词、数据库迁移 | 9 |
+| 第三轮优化（G-1 ~ G-6） | 事件处理器修复、自动滚动、编辑弹窗、输入框自适应、重新生成修复、marked 初始化优化 | 6 |
+
 ---
 
 ## 功能扩展阶段
@@ -406,3 +414,71 @@
 | 执行工作 | Chat.vue 添加全局 keydown 监听 |
 | 实现手段 | onMounted/onUnmounted 生命周期管理事件监听 |
 | 新增功能 | Ctrl+N 新建对话、Ctrl+K 聚焦搜索、Ctrl+Shift+E 导出对话、Escape 关闭侧边栏 |
+
+### F-19：默认学习助手系统提示词
+
+| 维度 | 内容 |
+|------|------|
+| 执行工作 | config.py 新增 DEFAULT_SYSTEM_PROMPT，ai_service.py load_history 注入默认提示词 |
+| 实现手段 | 环境变量可覆盖，会话无自定义提示词时自动使用默认的 |
+| 新增功能 | AI 定位为学习助手，围绕学习场景回答，支持中文，可被用户自定义提示词覆盖 |
+
+### F-20：数据库字段迁移
+
+| 维度 | 内容 |
+|------|------|
+| 执行工作 | 对已有 MySQL 表执行 ALTER TABLE 添加新字段 |
+| 实现手段 | users 表添加 nickname/avatar/preferences，conversations 表添加 pinned/archived/system_prompt |
+| 新增功能 | 修复第二轮扩展后数据库表结构与 ORM 模型不同步的问题 |
+
+---
+
+## 第三轮优化（功能修复与体验改进）
+
+### G-1：修复事件处理器写法错误
+
+| 维度 | 内容 |
+|------|------|
+| 执行工作 | Chat.vue 中 @edit/@delete 事件绑定修正 |
+| 实现手段 | `@edit="handleEdit(msg)"` → `@edit="() => handleEdit(msg)"` |
+| 移除功能 | 移除渲染时立即执行函数调用的错误写法 |
+
+### G-2：消息区域自动滚动
+
+| 维度 | 内容 |
+|------|------|
+| 执行工作 | Chat.vue 添加消息区域自动滚动逻辑 |
+| 实现手段 | watch 监听 messages 长度和最后一条消息内容，nextTick + scrollTop 滚动到底部 |
+| 新增功能 | 新消息到达和流式输出时自动滚动到最新消息 |
+
+### G-3：编辑消息弹窗替换原生 prompt
+
+| 维度 | 内容 |
+|------|------|
+| 执行工作 | Chat.vue handleEdit 改用 ElMessageBox.prompt |
+| 实现手段 | Element Plus 弹窗组件，textarea 输入，内容校验 |
+| 调整功能 | 原生 prompt() 替换为与 UI 风格一致的弹窗 |
+
+### G-4：输入框自动调整高度
+
+| 维度 | 内容 |
+|------|------|
+| 执行工作 | ChatInput.vue textarea 添加自动增高逻辑 |
+| 实现手段 | @input 事件触发 autoResize，scrollHeight 动态设置高度，最大 150px，发送后重置 |
+| 新增功能 | 多行输入时输入框自动增高，避免文本截断 |
+
+### G-5：修复重新生成消息重复 bug
+
+| 维度 | 内容 |
+|------|------|
+| 执行工作 | ChatRequest 新增 regenerate 标志，后端 chat 端点区分重新生成模式 |
+| 实现手段 | regenerate=true 时删除上一条 assistant 消息并跳过 save_user_message，前端 streamChat 传递 regenerate 参数 |
+| 移除功能 | 移除重新生成时重复保存用户消息的逻辑 |
+
+### G-6：marked.setOptions 优化
+
+| 维度 | 内容 |
+|------|------|
+| 执行工作 | ChatMessage.vue 中 marked 配置移至模块级 |
+| 实现手段 | 普通 `<script>` 块中调用 setOptions，仅在模块加载时执行一次 |
+| 调整功能 | 从每个组件实例调用改为模块级单次调用 |
