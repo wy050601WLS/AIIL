@@ -25,3 +25,10 @@ def login_user(data: UserLogin, db: Session) -> Token:
 
     token = create_access_token(user.id)
     return Token(access_token=token)
+
+
+def change_password(user: User, old_password: str, new_password: str, db: Session) -> None:
+    if not verify_password(old_password, user.password_hash):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="旧密码错误")
+    user.password_hash = hash_password(new_password)
+    db.commit()

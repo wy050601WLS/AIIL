@@ -16,6 +16,10 @@ async function handleSelect(id) {
 function handleLogout() {
   userStore.logout()
 }
+
+function goSettings() {
+  window.location.href = '/settings'
+}
 </script>
 
 <template>
@@ -44,7 +48,10 @@ function handleLogout() {
 
     <div class="sidebar-footer">
       <span class="username">{{ userStore.username }}</span>
-      <el-button text size="small" @click="handleLogout">退出</el-button>
+      <div class="footer-actions">
+        <el-button text size="small" @click="goSettings">设置</el-button>
+        <el-button text size="small" @click="handleLogout">退出</el-button>
+      </div>
     </div>
   </aside>
 </template>
@@ -140,5 +147,10 @@ function handleLogout() {
 .username {
   font-size: 14px;
   color: var(--text-secondary);
+}
+
+.footer-actions {
+  display: flex;
+  gap: 4px;
 }
 </style>

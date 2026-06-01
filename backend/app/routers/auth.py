@@ -2,8 +2,10 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.schemas.user import UserCreate, UserLogin, UserResponse, Token
-from app.services.auth_service import register_user, login_user
+from app.schemas.user import UserCreate, UserLogin, UserResponse, Token, ChangePassword
+from app.services.auth_service import register_user, login_user, change_password
+from app.models.user import User
+from app.utils.security import get_current_user
 
 router = APIRouter(prefix="/auth", tags=["认证"])
 
@@ -16,3 +18,9 @@ def register(data: UserCreate, db: Session = Depends(get_db)):
 @router.post("/login", response_model=Token)
 def login(data: UserLogin, db: Session = Depends(get_db)):
     return login_user(data, db)
+
+
+@router.put("/password")
+def update_password(data: ChangePassword, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    change_password(user, data.old_password, data.new_password, db)
+    return {"message": "密码修改成功"}
