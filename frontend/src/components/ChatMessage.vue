@@ -28,6 +28,13 @@ const props = defineProps({
   loading: { type: Boolean, default: false },
   createdAt: { type: String, default: '' },
   fontSize: { type: Number, default: 15 },
+  density: { type: String, default: 'normal' },
+})
+
+const densityMap = { compact: 4, normal: 8, relaxed: 14 }
+const rowStyle = computed(() => {
+  const v = densityMap[props.density] ?? 8
+  return { '--row-gap': v + 'px' }
 })
 
 const emit = defineEmits(['regenerate', 'edit', 'delete'])
@@ -73,7 +80,7 @@ function copyContent() {
 </script>
 
 <template>
-  <div class="message-row" :class="role">
+  <div class="message-row" :class="role" :style="rowStyle">
     <div class="avatar" :class="role">
       {{ avatarDisplay }}
     </div>
@@ -95,7 +102,7 @@ function copyContent() {
 .message-row {
   display: flex;
   gap: 12px;
-  padding: 8px 24px;
+  padding: var(--row-gap, 8px) 24px;
   max-width: 800px;
   margin: 0 auto;
 }
@@ -277,7 +284,7 @@ function copyContent() {
 
 @media (max-width: 768px) {
   .message-row {
-    padding: 8px 16px;
+    padding: var(--row-gap, 8px) 16px;
     gap: 8px;
   }
 

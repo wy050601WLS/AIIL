@@ -13,6 +13,7 @@ const sidebarVisible = ref(false)
 const messagesAreaRef = ref(null)
 
 const fontSize = computed(() => userStore.preferences?.fontSize || 15)
+const density = computed(() => userStore.preferences?.messageDensity || 'normal')
 
 function scrollToBottom() {
   nextTick(() => {
@@ -143,6 +144,7 @@ async function handleDelete(msg) {
           :loading="chatStore.loading"
           :created-at="msg.created_at"
           :font-size="fontSize"
+          :density="density"
           @regenerate="handleRegenerate"
           @edit="() => handleEdit(msg)"
           @delete="() => handleDelete(msg)"
