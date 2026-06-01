@@ -7,6 +7,10 @@ class ConversationCreate(BaseModel):
     title: str = Field(default="新对话", max_length=100)
 
 
+class ConversationUpdate(BaseModel):
+    title: str = Field(..., min_length=1, max_length=100)
+
+
 class ConversationResponse(BaseModel):
     id: int
     title: str

@@ -12,6 +12,14 @@ export function getMessages(conversationId) {
   return api.get(`/conversations/${conversationId}/messages`)
 }
 
+export function renameConversation(conversationId, title) {
+  return api.put(`/conversations/${conversationId}`, { title })
+}
+
+export function deleteConversation(conversationId) {
+  return api.delete(`/conversations/${conversationId}`)
+}
+
 export async function streamChat(conversationId, content, onToken, onDone) {
   const token = localStorage.getItem('token')
   try {

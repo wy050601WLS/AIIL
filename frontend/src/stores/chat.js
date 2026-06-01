@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { createConversation, getConversations, getMessages, streamChat } from '../api/chat'
+import { createConversation, getConversations, getMessages, streamChat, renameConversation, deleteConversation } from '../api/chat'
 
 export const useChatStore = defineStore('chat', () => {
   const conversations = ref([])
@@ -50,5 +50,20 @@ export const useChatStore = defineStore('chat', () => {
     }
   }
 
-  return { conversations, currentId, messages, loading, loadConversations, newConversation, selectConversation, sendMessage }
+  async function rename(id, title) {
+    const { data } = await renameConversation(id, title)
+    const conv = conversations.value.find(c => c.id === id)
+    if (conv) conv.title = data.title
+  }
+
+  async function remove(id) {
+    await deleteConversation(id)
+    conversations.value = conversations.value.filter(c => c.id !== id)
+    if (currentId.value === id) {
+      currentId.value = null
+      messages.value = []
+    }
+  }
+
+  return { conversations, currentId, messages, loading, loadConversations, newConversation, selectConversation, sendMessage, rename, remove }
 })

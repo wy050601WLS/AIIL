@@ -1,4 +1,6 @@
 <script setup>
+import { ref } from 'vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { useChatStore } from '../stores/chat'
 import { useUserStore } from '../stores/user'
 import { useThemeStore } from '../stores/theme'
@@ -7,11 +9,15 @@ const chatStore = useChatStore()
 const userStore = useUserStore()
 const themeStore = useThemeStore()
 
+const editingId = ref(null)
+const editTitle = ref('')
+
 async function handleNew() {
   await chatStore.newConversation()
 }
 
 async function handleSelect(id) {
+  if (editingId.value === id) return
   await chatStore.selectConversation(id)
 }
 
@@ -21,6 +27,37 @@ function handleLogout() {
 
 function goSettings() {
   window.location.href = '/settings'
+}
+
+function startRename(conv) {
+  editingId.value = conv.id
+  editTitle.value = conv.title
+}
+
+async function confirmRename(conv) {
+  const title = editTitle.value.trim()
+  if (!title) {
+    editingId.value = null
+    return
+  }
+  if (title !== conv.title) {
+    await chatStore.rename(conv.id, title)
+  }
+  editingId.value = null
+}
+
+async function handleDelete(conv) {
+  try {
+    await ElMessageBox.confirm(`确定删除会话「${conv.title}」？`, '删除会话', {
+      confirmButtonText: '删除',
+      cancelButtonText: '取消',
+      type: 'warning',
+    })
+    await chatStore.remove(conv.id)
+    ElMessage.success('会话已删除')
+  } catch {
+    // cancelled
+  }
 }
 </script>
 
@@ -41,7 +78,23 @@ function goSettings() {
         :class="{ active: conv.id === chatStore.currentId }"
         @click="handleSelect(conv.id)"
       >
-        <span class="conv-title">{{ conv.title }}</span>
+        <template v-if="editingId === conv.id">
+          <input
+            v-model="editTitle"
+            class="edit-input"
+            @blur="confirmRename(conv)"
+            @keyup.enter="confirmRename(conv)"
+            @keyup.escape="editingId = null"
+            autofocus
+          />
+        </template>
+        <template v-else>
+          <span class="conv-title">{{ conv.title }}</span>
+          <div class="conv-actions">
+            <el-button text size="small" class="action-btn" @click.stop="startRename(conv)">重命名</el-button>
+            <el-button text size="small" class="action-btn delete-btn" @click.stop="handleDelete(conv)">删除</el-button>
+          </div>
+        </template>
       </div>
       <div v-if="chatStore.conversations.length === 0" class="empty-hint">
         暂无会话，点击上方开始
@@ -110,6 +163,7 @@ function goSettings() {
   cursor: pointer;
   margin-bottom: 2px;
   transition: background 0.15s;
+  position: relative;
 }
 
 .conv-item:hover {
@@ -132,6 +186,49 @@ function goSettings() {
 
 .conv-item.active .conv-title {
   color: var(--text-primary);
+}
+
+.conv-actions {
+  display: none;
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  gap: 2px;
+}
+
+.conv-item:hover .conv-actions {
+  display: flex;
+}
+
+.conv-item:hover .conv-title {
+  padding-right: 100px;
+}
+
+.action-btn {
+  font-size: 12px;
+  color: var(--text-muted);
+  padding: 2px 4px;
+  height: auto;
+}
+
+.action-btn:hover {
+  color: var(--text-primary);
+}
+
+.delete-btn:hover {
+  color: var(--danger);
+}
+
+.edit-input {
+  width: 100%;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  color: var(--text-primary);
+  font-size: 14px;
+  padding: 2px 6px;
+  outline: none;
 }
 
 .empty-hint {

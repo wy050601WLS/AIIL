@@ -39,3 +39,27 @@ def get_messages(conversation_id: int, user: User, db: Session) -> list[MessageR
         .all()
     )
     return [MessageResponse.model_validate(m) for m in messages]
+
+
+def rename_conversation(conversation_id: int, title: str, user: User, db: Session) -> ConversationResponse:
+    conv = db.query(Conversation).filter(
+        Conversation.id == conversation_id,
+        Conversation.user_id == user.id,
+    ).first()
+    if not conv:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="会话不存在")
+    conv.title = title
+    db.commit()
+    db.refresh(conv)
+    return ConversationResponse.model_validate(conv)
+
+
+def delete_conversation(conversation_id: int, user: User, db: Session) -> None:
+    conv = db.query(Conversation).filter(
+        Conversation.id == conversation_id,
+        Conversation.user_id == user.id,
+    ).first()
+    if not conv:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="会话不存在")
+    db.delete(conv)
+    db.commit()
