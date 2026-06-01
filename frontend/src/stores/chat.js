@@ -34,14 +34,14 @@ export const useChatStore = defineStore('chat', () => {
 
     messages.value.push({ role: 'user', content, created_at: new Date().toISOString() })
 
-    const assistantMsg = { role: 'assistant', content: '', created_at: new Date().toISOString() }
-    messages.value.push(assistantMsg)
+    const idx = messages.value.length
+    messages.value.push({ role: 'assistant', content: '', created_at: new Date().toISOString() })
     loading.value = true
 
     await streamChat(
       currentId.value,
       content,
-      (token) => { assistantMsg.content += token },
+      (token) => { messages.value[idx].content += token },
       () => { loading.value = false }
     )
   }
