@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { useChatStore } from '../stores/chat'
 import { useUserStore } from '../stores/user'
 import Sidebar from '../components/Sidebar.vue'
@@ -68,11 +69,20 @@ async function handleRegenerate() {
 }
 
 async function handleEdit(msg) {
-  // For now, just re-send as a new message
-  // A proper edit would modify the message and re-generate the AI response
-  const newContent = prompt('编辑消息', msg.content)
-  if (newContent && newContent !== msg.content) {
-    await chatStore.editMessage(msg.id, newContent)
+  try {
+    const { value } = await ElMessageBox.prompt('编辑消息内容', '编辑消息', {
+      inputValue: msg.content,
+      confirmButtonText: '保存',
+      cancelButtonText: '取消',
+      inputType: 'textarea',
+      inputValidator: (val) => val.trim() ? true : '消息内容不能为空',
+    })
+    if (value && value !== msg.content) {
+      await chatStore.editMessage(msg.id, value)
+      ElMessage.success('消息已更新')
+    }
+  } catch {
+    // cancelled
   }
 }
 
