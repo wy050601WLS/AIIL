@@ -50,6 +50,32 @@ export const useChatStore = defineStore('chat', () => {
     }
   }
 
+  async function regenerate() {
+    if (!currentId.value || loading.value) return
+    // find last user message
+    const lastUserIdx = [...messages.value].reverse().findIndex(m => m.role === 'user')
+    if (lastUserIdx === -1) return
+    const lastUserContent = messages.value[messages.value.length - 1 - lastUserIdx].content
+    // remove last assistant message
+    if (messages.value[messages.value.length - 1].role === 'assistant') {
+      messages.value.pop()
+    }
+    // re-send
+    const idx = messages.value.length
+    messages.value.push({ role: 'assistant', content: '', created_at: new Date().toISOString() })
+    loading.value = true
+    try {
+      await streamChat(
+        currentId.value,
+        lastUserContent,
+        (token) => { messages.value[idx].content += token },
+        () => { loading.value = false }
+      )
+    } catch {
+      loading.value = false
+    }
+  }
+
   async function rename(id, title) {
     const { data } = await renameConversation(id, title)
     const conv = conversations.value.find(c => c.id === id)
@@ -65,5 +91,5 @@ export const useChatStore = defineStore('chat', () => {
     }
   }
 
-  return { conversations, currentId, messages, loading, loadConversations, newConversation, selectConversation, sendMessage, rename, remove }
+  return { conversations, currentId, messages, loading, loadConversations, newConversation, selectConversation, sendMessage, rename, remove, regenerate }
 })

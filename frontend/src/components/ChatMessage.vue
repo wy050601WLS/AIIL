@@ -2,11 +2,16 @@
 import { computed } from 'vue'
 import { marked } from 'marked'
 import hljs from 'highlight.js'
+import { ElMessage } from 'element-plus'
 
 const props = defineProps({
   role: { type: String, required: true },
   content: { type: String, default: '' },
+  isLast: { type: Boolean, default: false },
+  loading: { type: Boolean, default: false },
 })
+
+const emit = defineEmits(['regenerate'])
 
 marked.setOptions({
   highlight(code, lang) {
@@ -23,6 +28,12 @@ const rendered = computed(() => {
   if (props.role === 'user') return null
   return marked.parse(props.content || '')
 })
+
+function copyContent() {
+  navigator.clipboard.writeText(props.content).then(() => {
+    ElMessage.success('已复制')
+  })
+}
 </script>
 
 <template>
@@ -33,6 +44,10 @@ const rendered = computed(() => {
     <div class="bubble">
       <div v-if="role === 'user'" class="content" v-text="content"></div>
       <div v-else class="content markdown-body" v-html="rendered"></div>
+      <div v-if="!loading && content" class="msg-actions">
+        <el-button text size="small" class="msg-action-btn" @click="copyContent">复制</el-button>
+        <el-button v-if="role === 'assistant' && isLast" text size="small" class="msg-action-btn" @click="emit('regenerate')">重新生成</el-button>
+      </div>
     </div>
   </div>
 </template>
@@ -81,6 +96,7 @@ const rendered = computed(() => {
   line-height: 1.6;
   font-size: 15px;
   word-break: break-word;
+  position: relative;
 }
 
 .user .bubble {
@@ -95,6 +111,29 @@ const rendered = computed(() => {
   color: var(--text-primary);
   border: 1px solid var(--border);
   border-bottom-left-radius: var(--radius-sm);
+}
+
+.msg-actions {
+  display: flex;
+  gap: 4px;
+  margin-top: 8px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.bubble:hover .msg-actions {
+  opacity: 1;
+}
+
+.msg-action-btn {
+  font-size: 12px;
+  color: var(--text-muted);
+  padding: 2px 6px;
+  height: auto;
+}
+
+.msg-action-btn:hover {
+  color: var(--accent);
 }
 
 /* Markdown 样式 */

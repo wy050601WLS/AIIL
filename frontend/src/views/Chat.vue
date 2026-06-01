@@ -14,6 +14,10 @@ onMounted(() => {
 async function handleSend(content) {
   await chatStore.sendMessage(content)
 }
+
+async function handleRegenerate() {
+  await chatStore.regenerate()
+}
 </script>
 
 <template>
@@ -32,6 +36,9 @@ async function handleSend(content) {
           :key="i"
           :role="msg.role"
           :content="msg.content"
+          :is-last="i === chatStore.messages.length - 1"
+          :loading="chatStore.loading"
+          @regenerate="handleRegenerate"
         />
       </div>
 
