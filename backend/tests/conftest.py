@@ -2,6 +2,8 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 from app.database import Base, get_db
 from app.main import app
@@ -19,7 +21,10 @@ def override_get_db():
         db.close()
 
 
+# 测试环境禁用限流
+app.state.limiter = Limiter(key_func=get_remote_address, enabled=False)
 app.dependency_overrides[get_db] = override_get_db
+
 
 
 @pytest.fixture(autouse=True)

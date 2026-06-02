@@ -1,6 +1,4 @@
-from fastapi import APIRouter, Depends, Request
-from slowapi import Limiter
-from slowapi.util import get_remote_address
+from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -10,18 +8,15 @@ from app.models.user import User
 from app.utils.security import get_current_user
 
 router = APIRouter(prefix="/auth", tags=["认证"])
-limiter = Limiter(key_func=get_remote_address)
 
 
 @router.post("/register", response_model=UserResponse)
-@limiter.limit("5/minute")
-def register(request: Request, data: UserCreate, db: Session = Depends(get_db)):
+def register(data: UserCreate, db: Session = Depends(get_db)):
     return register_user(data, db)
 
 
 @router.post("/login", response_model=Token)
-@limiter.limit("10/minute")
-def login(request: Request, data: UserLogin, db: Session = Depends(get_db)):
+def login(data: UserLogin, db: Session = Depends(get_db)):
     return login_user(data, db)
 
 
