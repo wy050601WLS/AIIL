@@ -8,8 +8,14 @@ from app.models.user import User
 from app.schemas.conversation import ChatRequest
 
 
-def save_user_message(conversation_id: int, content: str, db: Session) -> None:
-    msg = Message(conversation_id=conversation_id, role="user", content=content)
+def save_user_message(conversation_id: int, content: str, db: Session, images: list[str] | None = None) -> None:
+    import json
+    msg = Message(
+        conversation_id=conversation_id,
+        role="user",
+        content=content,
+        images=json.dumps(images) if images else None,
+    )
     db.add(msg)
     db.commit()
 
@@ -25,7 +31,17 @@ def load_history(conversation_id: int, db: Session) -> tuple[list[dict], Convers
     history = []
     system_prompt = (conv.system_prompt if conv and conv.system_prompt else settings.DEFAULT_SYSTEM_PROMPT)
     history.append({"role": "system", "content": system_prompt})
-    history.extend({"role": m.role, "content": m.content} for m in messages if m.content)
+    for m in messages:
+        if not m.content:
+            continue
+        if m.images:
+            img_list = json.loads(m.images)
+            parts = [{"type": "text", "text": m.content}]
+            for img_url in img_list:
+                parts.append({"type": "image_url", "image_url": {"url": img_url}})
+            history.append({"role": m.role, "content": parts})
+        else:
+            history.append({"role": m.role, "content": m.content})
     return history, conv
 
 

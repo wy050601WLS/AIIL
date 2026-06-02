@@ -61,8 +61,8 @@ function handleKeydown(e) {
   }
 }
 
-async function handleSend(content) {
-  await chatStore.sendMessage(content)
+async function handleSend({ content, images }) {
+  await chatStore.sendMessage(content, images)
 }
 
 async function handleRegenerate() {
@@ -153,6 +153,7 @@ async function handleDelete(msg) {
           :key="msg.id || i"
           :role="msg.role"
           :content="msg.content"
+          :images="msg.images || []"
           :is-last="i === chatStore.messages.length - 1"
           :loading="chatStore.loading"
           :created-at="msg.created_at"

@@ -75,12 +75,18 @@ export const useChatStore = defineStore('chat', () => {
     messages.value = data
   }
 
-  async function sendMessage(content) {
+  async function sendMessage(content, images) {
     if (!currentId.value) {
-      await newConversation(content.slice(0, 20))
+      await newConversation((content || '').slice(0, 20) || '图片对话')
     }
 
-    messages.value.push({ role: 'user', content, created_at: new Date().toISOString() })
+    const hasImages = images && images.length > 0
+    messages.value.push({
+      role: 'user',
+      content,
+      images: hasImages ? images : undefined,
+      created_at: new Date().toISOString(),
+    })
 
     const idx = messages.value.length
     messages.value.push({ role: 'assistant', content: '', created_at: new Date().toISOString() })
@@ -96,6 +102,7 @@ export const useChatStore = defineStore('chat', () => {
         currentModel.value || undefined,
         false,
         abortController.signal,
+        hasImages ? images : undefined,
       )
       if (!messages.value[idx].content) {
         messages.value.splice(idx, 1)

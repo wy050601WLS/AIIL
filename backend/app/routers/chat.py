@@ -32,7 +32,7 @@ def chat(data: ChatRequest, user: User = Depends(get_current_user), db: Session 
             db.delete(last_assistant)
             db.commit()
     else:
-        save_user_message(data.conversation_id, data.content, db)
+        save_user_message(data.conversation_id, data.content, db, data.images)
 
     history, conv = load_history(data.conversation_id, db)
     chunks, full_response = call_ai_api(history, model=data.model)

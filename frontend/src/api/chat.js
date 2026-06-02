@@ -58,8 +58,10 @@ export async function exportConversation(conversationId) {
   URL.revokeObjectURL(url)
 }
 
-export async function streamChat(conversationId, content, onToken, onDone, model, regenerate = false, signal) {
+export async function streamChat(conversationId, content, onToken, onDone, model, regenerate = false, signal, images) {
   const token = localStorage.getItem('token')
+  const body = { conversation_id: conversationId, content, model, regenerate }
+  if (images && images.length > 0) body.images = images
   try {
     const res = await fetch('/api/chat', {
       method: 'POST',
@@ -67,7 +69,7 @@ export async function streamChat(conversationId, content, onToken, onDone, model
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({ conversation_id: conversationId, content, model, regenerate }),
+      body: JSON.stringify(body),
       signal,
     })
 

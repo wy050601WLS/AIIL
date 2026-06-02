@@ -27,6 +27,7 @@ class Message(Base):
     conversation_id = Column(Integer, ForeignKey("conversations.id", ondelete="CASCADE"), nullable=False, index=True)
     role = Column(Enum("user", "assistant", name="message_role"), nullable=False)
     content = Column(Text, nullable=False)
+    images = Column(Text, nullable=True)  # JSON 数组：base64 data URL 列表
     created_at = Column(DateTime, default=datetime.now)
 
     conversation = relationship("Conversation", back_populates="messages")

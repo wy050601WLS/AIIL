@@ -24,12 +24,15 @@ const userStore = useUserStore()
 const props = defineProps({
   role: { type: String, required: true },
   content: { type: String, default: '' },
+  images: { type: Array, default: () => [] },
   isLast: { type: Boolean, default: false },
   loading: { type: Boolean, default: false },
   createdAt: { type: String, default: '' },
   fontSize: { type: Number, default: 15 },
   density: { type: String, default: 'normal' },
 })
+
+const previewImage = ref(null)
 
 const densityMap = { compact: 4, normal: 8, relaxed: 14 }
 const rowStyle = computed(() => {
@@ -79,6 +82,15 @@ function copyContent() {
       {{ avatarDisplay }}
     </div>
     <div ref="bubbleRef" class="bubble" :style="bubbleStyle">
+      <div v-if="images && images.length > 0" class="msg-images">
+        <img
+          v-for="(img, i) in images"
+          :key="i"
+          :src="img"
+          class="msg-img"
+          @click="previewImage = img"
+        />
+      </div>
       <div v-if="role === 'user'" class="content" v-text="content"></div>
       <div v-else class="content markdown-body" v-html="rendered"></div>
       <div v-if="!loading && content" class="msg-actions">
@@ -90,6 +102,12 @@ function copyContent() {
       <div v-if="timeDisplay" class="time-stamp">{{ timeDisplay }}</div>
     </div>
   </div>
+
+  <Teleport to="body">
+    <div v-if="previewImage" class="img-preview-overlay" @click="previewImage = null">
+      <img :src="previewImage" class="img-preview-full" />
+    </div>
+  </Teleport>
 </template>
 
 <style scoped>
@@ -185,6 +203,40 @@ function copyContent() {
   color: var(--text-muted);
   margin-top: 4px;
   opacity: 0.7;
+}
+
+.msg-images {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.msg-img {
+  max-width: 200px;
+  max-height: 200px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  object-fit: cover;
+  border: 1px solid var(--border);
+}
+
+.img-preview-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  cursor: pointer;
+}
+
+.img-preview-full {
+  max-width: 90vw;
+  max-height: 90vh;
+  object-fit: contain;
+  border-radius: var(--radius-sm);
 }
 
 /* Markdown 样式 */
