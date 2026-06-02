@@ -313,3 +313,31 @@ AIIL/
 - 生成初始迁移脚本，数据库 stamp 到当前版本
 - 移除 main.py 中的 `Base.metadata.create_all()`，表结构改由 alembic 管理
 - 以后修改 ORM 模型后：`alembic revision --autogenerate -m "描述"` → `alembic upgrade head`
+
+---
+
+## 阶段十一：安全加固与质量改进
+
+后端安全加固、前端 UX 改进、测试扩展、文档补充。
+
+### J-1：后端安全加固
+- HTTPException/status 导入统一移至文件顶部
+- edit_message 改用 Pydantic MessageUpdate 校验请求体
+- 提取 `_verify_message_owner` 消除重复鉴权代码
+- CORS 从 `allow_origins=["*"]` 改为配置化（CORS_ORIGINS 环境变量）
+- 添加 slowapi 全局限流（60 次/分钟）
+
+### J-2：流式输出停止按钮
+- ChatInput 新增红色"停止"按钮（loading 时显示）
+- streamChat 支持 AbortSignal，chat store 新增 stopStreaming 方法
+
+### J-3：消息删除确认
+- 删除消息前弹出 ElMessageBox.confirm 确认对话框
+
+### J-4：测试扩展至 21 个用例
+- 新增 test_messages.py：消息编辑/删除/越权/空内容校验（5 个）
+- 新增 test_features.py：置顶/归档/系统提示词/偏好/改密/模型列表（9 个）
+- 测试环境禁用限流
+
+### J-5：README.md
+- 项目入口文档：技术栈、快速开始、环境变量、测试命令、文档链接
