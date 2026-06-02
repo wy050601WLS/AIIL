@@ -470,3 +470,24 @@ AIIL/
 - 扩展方向（高/中/低价值分类）
 - 改进建议（P0/P1/P2 优先级）
 - 开发约定（后端分层、前端模式、Git 规范）
+
+---
+
+## 阶段十八：全项目注释补充
+
+为后端和前端所有源文件补充中文注释和 docstring，代码注释率从 ~3% 提升至全覆盖。
+
+### Q-1：后端注释（15 个文件）
+- 核心文件：main.py / config.py / database.py — 模块文件头、实例说明
+- 模型层：models/user.py / conversation.py — 模型类 docstring、字段注释
+- Schema 层：schemas/user.py / conversation.py — 14 个 schema 类 docstring
+- 工具层：utils/security.py — 5 个函数 docstring（哈希/JWT/依赖注入）
+- 服务层：services/ — 15 个函数 docstring（重点：ai_service 的 SSE 回放和多模态转换）
+- 路由层：routers/ — 22 个端点 docstring
+
+### Q-2：前端注释（19 个文件）
+- API 层：api/ — 5 个文件、22 个函数 JSDoc（重点：streamChat 的 SSE 解析流程）
+- Store 层：stores/ — 5 个文件、32 个函数注释（重点：chat store 的流式对话逻辑）
+- 组件层：components/ — 3 个 Vue 组件头注释（Props/Events 说明）、31 个函数注释
+- 视图层：views/ — 6 个页面组件头注释、22 个函数注释
+- 其他：router/index.js 路由表注释、main.js 入口注释
