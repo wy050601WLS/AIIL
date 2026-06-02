@@ -24,7 +24,6 @@
 | 图片识别 | 上传/粘贴图片，AI 多模态识别分析 |
 | 语音输入 | 浏览器 Web Speech API，中文实时语音转文字 |
 | 会话管理 | 新建、重命名、置顶、归档、删除、搜索、导出 Markdown |
-| 系统提示词 | 每个对话可自定义 system prompt |
 | 知识卡片 | 收藏 AI 回复精华，支持标签分类和筛选 |
 | 学习面板 | 统计卡片（对话/消息/卡片/活跃天数）+ 30 天趋势图 + 热门标签 |
 
@@ -49,7 +48,7 @@
 │  │ Chat     │ │Sidebar   │ │ user (Pinia) │  │
 │  │ Login    │ │ChatMsg   │ │ chat         │  │
 │  │ Settings │ │ChatInput │ │ cards        │  │
-│  │ Cards    │ │SysPrompt │ │ dashboard    │  │
+│  │ Cards    │ │          │ │ dashboard    │  │
 │  │Dashboard │ │          │ │ theme        │  │
 │  └─────────┘ └──────────┘ └──────────────┘  │
 │           │         API Layer (Axios)        │
@@ -110,7 +109,7 @@ users 1──n knowledge_cards
 | title | VARCHAR(100) | 会话标题，默认"新对话" |
 | pinned | BOOLEAN | 是否置顶 |
 | archived | BOOLEAN | 是否归档 |
-| system_prompt | TEXT | 自定义系统提示词 |
+| system_prompt | TEXT | （已废弃，保留列） |
 | created_at | DATETIME | 创建时间 |
 
 #### messages
@@ -158,7 +157,6 @@ users 1──n knowledge_cards
 | DELETE | /conversations/{id} | 删除会话 | ✓ |
 | PUT | /conversations/{id}/pin | 切换置顶 | ✓ |
 | PUT | /conversations/{id}/archive | 切换归档 | ✓ |
-| PUT | /conversations/{id}/system-prompt | 设置提示词 | ✓ |
 | GET | /conversations/{id}/export | 导出 Markdown | ✓ |
 
 ### AI 对话
@@ -250,7 +248,7 @@ app/
 │   └── conversation.py    # 对话/消息/卡片/面板 Pydantic 模型
 ├── routers/
 │   ├── auth.py            # 认证路由（注册/登录/资料/密码）
-│   ├── history.py         # 会话管理路由（CRUD/置顶/归档/提示词）
+│   ├── history.py         # 会话管理路由（CRUD/置顶/归档）
 │   ├── chat.py            # AI 对话路由（SSE/导出/模型/消息编辑）
 │   ├── cards.py           # 知识卡片路由（增删查）
 │   └── dashboard.py       # 学习面板路由（统计）
@@ -270,11 +268,11 @@ tests/
 ├── test_auth.py           # 4 个测试：注册/重复注册/登录/错误密码
 ├── test_conversations.py  # 4 个测试：创建/列表/重命名/删除
 ├── test_messages.py       # 5 个测试：编辑/空内容/删除/不存在/跨用户
-├── test_features.py       # 9 个测试：置顶/归档/提示词/资料/密码/模型
+├── test_features.py       # 8 个测试：置顶/归档/资料/密码/模型
 └── test_dashboard.py      # 3 个测试：空数据/结构验证/未授权
 ```
 
-共 **25 个测试**，全部通过。
+共 **24 个测试**，全部通过。
 
 ### 数据库迁移 `backend/alembic/versions/`
 
@@ -308,8 +306,7 @@ src/
 ├── components/
 │   ├── Sidebar.vue        # 侧边栏（会话列表/搜索/导航/下拉菜单）
 │   ├── ChatMessage.vue    # 消息气泡（Markdown/图片/操作按钮）
-│   ├── ChatInput.vue      # 输入区（文本/图片上传/语音/发送）
-│   └── SystemPromptDialog.vue  # 系统提示词弹窗
+│   └── ChatInput.vue      # 输入区（文本/图片上传/语音/发送）
 └── views/
     ├── Login.vue          # 登录页
     ├── Register.vue       # 注册页
@@ -397,4 +394,4 @@ python -m pytest tests/ -q
 | 十二 | 语音输入 + 图片识别（多模态） |
 | 十三 | 知识卡片功能 |
 | 十四 | 学习进度面板 |
-| UI 优化 | 侧边栏图标化、下拉菜单重构、主题切换图标化 |
+| UI 优化 | 侧边栏图标化、下拉菜单重构、主题切换图标化、移除系统提示词 |
