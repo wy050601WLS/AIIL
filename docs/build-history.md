@@ -264,6 +264,7 @@
 | 第三轮优化（G-1 ~ G-6） | 事件处理器修复、自动滚动、编辑弹窗、输入框自适应、重新生成修复、marked 初始化优化 | 6 |
 | 第四轮优化（G-7 ~ G-10） | 表单校验提示、设置页加载时序、默认模型偏好、消息密度应用 | 4 |
 | 第五轮优化（H-1 ~ H-12） | 校验拦截、移动端操作、路由导航、错误处理、归档搜索、marked 去重、归档计数、复制渲染文本 | 8 |
+| 工程化（I-1） | Alembic 数据库迁移 | 1 |
 
 ---
 
@@ -584,3 +585,17 @@
 | 执行工作 | ChatMessage.vue 复制功能改为复制渲染后文本 |
 | 实现手段 | AI 消息通过 bubbleRef 获取 .content 元素的 innerText，用户消息保持原样 |
 | 调整功能 | 复制 AI 消息不再输出原始 Markdown 源码 |
+
+---
+
+## 工程化改进
+
+### I-1：Alembic 数据库迁移
+
+| 维度 | 内容 |
+|------|------|
+| 执行工作 | 集成 Alembic 数据库迁移工具，生成初始迁移脚本 |
+| 实现手段 | alembic init + env.py 配置读取应用 DATABASE_URL + autogenerate 生成初始迁移 |
+| 新增功能 | 数据库表结构变更纳入版本控制，支持 `alembic upgrade head` 升级和 `alembic downgrade -1` 回滚 |
+| 移除功能 | 移除 main.py 中的 `Base.metadata.create_all()`，改用 alembic 管理表结构 |
+| 调整功能 | requirements.txt 新增 alembic 依赖，创建 models/__init__.py |

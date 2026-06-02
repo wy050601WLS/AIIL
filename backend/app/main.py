@@ -2,10 +2,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
-from app.database import engine, Base
+from app.database import Base  # noqa: F401 — 确保模型被注册
 from app.routers import auth, history, chat
-
-Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="AI 智慧学习系统")
 
