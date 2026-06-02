@@ -1,5 +1,6 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import StreamingResponse, PlainTextResponse
+from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -8,6 +9,10 @@ from app.models.user import User
 from app.schemas.conversation import ChatRequest
 from app.services.ai_service import verify_conversation_owner, save_user_message, load_history, call_ai_api
 from app.utils.security import get_current_user
+
+
+class MessageUpdate(BaseModel):
+    content: str = Field(..., min_length=1)
 
 router = APIRouter(tags=["AI 对话"])
 
@@ -82,20 +87,23 @@ def list_models():
     }
 
 
-@router.put("/messages/{message_id}")
-def edit_message(message_id: int, data: dict, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+def _verify_message_owner(message_id: int, user: User, db: Session) -> Message:
     msg = db.query(Message).filter(Message.id == message_id).first()
     if not msg:
-        from fastapi import HTTPException, status
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="消息不存在")
     conv = db.query(Conversation).filter(
         Conversation.id == msg.conversation_id,
         Conversation.user_id == user.id,
     ).first()
     if not conv:
-        from fastapi import HTTPException, status
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="无权操作")
-    msg.content = data.get("content", msg.content)
+    return msg
+
+
+@router.put("/messages/{message_id}")
+def edit_message(message_id: int, data: MessageUpdate, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    msg = _verify_message_owner(message_id, user, db)
+    msg.content = data.content
     db.commit()
     db.refresh(msg)
     return {"id": msg.id, "role": msg.role, "content": msg.content, "created_at": str(msg.created_at)}
@@ -103,17 +111,7 @@ def edit_message(message_id: int, data: dict, user: User = Depends(get_current_u
 
 @router.delete("/messages/{message_id}")
 def delete_message(message_id: int, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    msg = db.query(Message).filter(Message.id == message_id).first()
-    if not msg:
-        from fastapi import HTTPException, status
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="消息不存在")
-    conv = db.query(Conversation).filter(
-        Conversation.id == msg.conversation_id,
-        Conversation.user_id == user.id,
-    ).first()
-    if not conv:
-        from fastapi import HTTPException, status
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="无权操作")
+    msg = _verify_message_owner(message_id, user, db)
     db.delete(msg)
     db.commit()
     return {"message": "消息已删除"}
