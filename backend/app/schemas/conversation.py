@@ -59,3 +59,22 @@ class KnowledgeCardResponse(BaseModel):
     created_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+class DailyMessage(BaseModel):
+    date: str
+    count: int
+
+
+class TagCount(BaseModel):
+    tag: str
+    count: int
+
+
+class DashboardStats(BaseModel):
+    conversation_count: int
+    message_count: int
+    card_count: int
+    active_days: int
+    daily_messages: list[DailyMessage]
+    top_tags: list[TagCount]

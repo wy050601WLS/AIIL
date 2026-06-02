@@ -6,6 +6,7 @@ const routes = [
   { path: '/', name: 'Chat', component: () => import('../views/Chat.vue'), meta: { auth: true } },
   { path: '/settings', name: 'Settings', component: () => import('../views/Settings.vue'), meta: { auth: true } },
   { path: '/cards', name: 'Cards', component: () => import('../views/Cards.vue'), meta: { auth: true } },
+  { path: '/dashboard', name: 'Dashboard', component: () => import('../views/Dashboard.vue'), meta: { auth: true } },
 ]
 
 const router = createRouter({

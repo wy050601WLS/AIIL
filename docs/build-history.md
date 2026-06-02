@@ -392,3 +392,20 @@ AIIL/
 - ChatMessage 气泡操作栏新增「提取卡片」按钮（仅 assistant 消息）
 - 点击后将消息内容保存为知识卡片，来源标记为对话 ID
 - Sidebar 底栏新增「卡片」入口
+
+---
+
+## 阶段十四：学习进度面板
+
+新增学习数据可视化面板，展示用户学习轨迹。
+
+### M-1：后端统计 API
+- GET /dashboard/stats：返回对话数、消息数、卡片数、活跃天数
+- 最近 30 天每日消息数（GROUP BY DATE）
+- 知识卡片热门标签 Top 10
+- DashboardStats / DailyMessage / TagCount Pydantic schemas
+
+### M-2：前端学习面板页面
+- api/dashboard.js + stores/dashboard.js
+- views/Dashboard.vue：统计卡片（4 宫格）、30 天柱状图（纯 CSS）、热门标签
+- 路由 /dashboard，Sidebar 底栏新增「面板」入口

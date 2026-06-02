@@ -83,6 +83,11 @@ function goCards() {
   router.push('/cards')
 }
 
+function goDashboard() {
+  emit('close')
+  router.push('/dashboard')
+}
+
 function startRename(conv) {
   editingId.value = conv.id
   editTitle.value = conv.title
@@ -241,6 +246,7 @@ async function savePrompt(prompt) {
         <span class="username">{{ userStore.displayName }}</span>
       </div>
       <div class="footer-actions">
+        <el-button text size="small" @click="goDashboard">面板</el-button>
         <el-button text size="small" @click="goCards">卡片</el-button>
         <el-button text size="small" @click="themeStore.toggle">
           {{ themeStore.theme === 'dark' ? '浅色' : '深色' }}
