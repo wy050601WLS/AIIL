@@ -18,6 +18,7 @@ export const useChatStore = defineStore('chat', () => {
   const models = ref([])
   const currentModel = ref(localStorage.getItem('model') || '')
   const showArchived = ref(false)
+  let abortController = null
 
   const filteredConversations = computed(() => {
     let list = conversations.value
@@ -84,6 +85,7 @@ export const useChatStore = defineStore('chat', () => {
     const idx = messages.value.length
     messages.value.push({ role: 'assistant', content: '', created_at: new Date().toISOString() })
     loading.value = true
+    abortController = new AbortController()
 
     try {
       await streamChat(
@@ -92,15 +94,21 @@ export const useChatStore = defineStore('chat', () => {
         (token) => { messages.value[idx].content += token },
         () => { loading.value = false },
         currentModel.value || undefined,
+        false,
+        abortController.signal,
       )
       if (!messages.value[idx].content) {
         messages.value.splice(idx, 1)
         ElMessage.error('AI 未返回回复，请重试')
       }
     } catch {
-      messages.value.splice(idx, 1)
+      if (!abortController.signal.aborted) {
+        messages.value.splice(idx, 1)
+        ElMessage.error('请求失败，请检查网络后重试')
+      }
       loading.value = false
-      ElMessage.error('请求失败，请检查网络后重试')
+    } finally {
+      abortController = null
     }
   }
 
@@ -115,6 +123,7 @@ export const useChatStore = defineStore('chat', () => {
     const idx = messages.value.length
     messages.value.push({ role: 'assistant', content: '', created_at: new Date().toISOString() })
     loading.value = true
+    abortController = new AbortController()
     try {
       await streamChat(
         currentId.value,
@@ -123,8 +132,19 @@ export const useChatStore = defineStore('chat', () => {
         () => { loading.value = false },
         currentModel.value || undefined,
         true,
+        abortController.signal,
       )
     } catch {
+      loading.value = false
+    } finally {
+      abortController = null
+    }
+  }
+
+  function stopStreaming() {
+    if (abortController) {
+      abortController.abort()
+      abortController = null
       loading.value = false
     }
   }
@@ -186,7 +206,7 @@ export const useChatStore = defineStore('chat', () => {
     conversations, currentId, messages, loading, models, currentModel,
     showArchived, filteredConversations, pinnedConversations, normalConversations,
     loadConversations, newConversation, selectConversation, sendMessage,
-    rename, remove, regenerate, loadModels, setModel, exportCurrent,
+    rename, remove, regenerate, stopStreaming, loadModels, setModel, exportCurrent,
     editMessage, deleteMessage, pin, archive, toggleShowArchived,
     updateSystemPrompt,
   }

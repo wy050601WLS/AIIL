@@ -5,7 +5,7 @@ defineProps({
   loading: { type: Boolean, default: false },
 })
 
-const emit = defineEmits(['send'])
+const emit = defineEmits(['send', 'stop'])
 const input = ref('')
 const textareaRef = ref(null)
 
@@ -48,12 +48,19 @@ function handleKeydown(e) {
         @keydown="handleKeydown"
       ></textarea>
       <button
+        v-if="loading"
+        class="stop-btn"
+        @click="emit('stop')"
+      >
+        停止
+      </button>
+      <button
+        v-else
         class="send-btn"
-        :disabled="!input.trim() || loading"
+        :disabled="!input.trim()"
         @click="handleSend"
       >
-        <span v-if="loading" class="loading-dot">...</span>
-        <span v-else>发送</span>
+        发送
       </button>
     </div>
   </div>
@@ -119,6 +126,22 @@ function handleKeydown(e) {
 .send-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.stop-btn {
+  background: var(--danger);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 8px 20px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: opacity 0.15s;
+  white-space: nowrap;
+}
+
+.stop-btn:hover {
+  opacity: 0.85;
 }
 
 .loading-dot {

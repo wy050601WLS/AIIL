@@ -69,6 +69,10 @@ async function handleRegenerate() {
   await chatStore.regenerate()
 }
 
+function handleStop() {
+  chatStore.stopStreaming()
+}
+
 async function handleEdit(msg) {
   try {
     const { value } = await ElMessageBox.prompt('编辑消息内容', '编辑消息', {
@@ -88,7 +92,16 @@ async function handleEdit(msg) {
 }
 
 async function handleDelete(msg) {
-  await chatStore.deleteMessage(msg.id)
+  try {
+    await ElMessageBox.confirm('确定删除这条消息？', '删除消息', {
+      confirmButtonText: '删除',
+      cancelButtonText: '取消',
+      type: 'warning',
+    })
+    await chatStore.deleteMessage(msg.id)
+  } catch {
+    // cancelled
+  }
 }
 </script>
 
@@ -151,7 +164,7 @@ async function handleDelete(msg) {
         />
       </div>
 
-      <ChatInput :loading="chatStore.loading" @send="handleSend" />
+      <ChatInput :loading="chatStore.loading" @send="handleSend" @stop="handleStop" />
     </main>
   </div>
 </template>
