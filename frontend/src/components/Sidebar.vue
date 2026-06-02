@@ -23,7 +23,6 @@ const searchQuery = ref('')
 const promptDialogVisible = ref(false)
 const promptConvId = ref(null)
 const promptConvPrompt = ref('')
-const expandedId = ref(null)
 
 const searchFiltered = computed(() => {
   if (!searchQuery.value.trim()) return null
@@ -49,6 +48,14 @@ const normalList = computed(() => {
 
 const archivedCount = computed(() => chatStore.conversations.filter(c => c.archived).length)
 
+function handleConvAction(cmd, conv) {
+  if (cmd === 'rename') startRename(conv)
+  else if (cmd === 'pin') handlePin(conv)
+  else if (cmd === 'prompt') openPromptDialog(conv)
+  else if (cmd === 'archive') handleArchive(conv)
+  else if (cmd === 'delete') handleDelete(conv)
+}
+
 async function handleNew() {
   await chatStore.newConversation()
   emit('close')
@@ -56,17 +63,8 @@ async function handleNew() {
 
 async function handleSelect(id) {
   if (editingId.value === id) return
-  if (expandedId.value === id) {
-    expandedId.value = null
-    return
-  }
-  expandedId.value = null
   await chatStore.selectConversation(id)
   emit('close')
-}
-
-function toggleExpand(id) {
-  expandedId.value = expandedId.value === id ? null : id
 }
 
 function handleLogout() {
@@ -173,7 +171,7 @@ async function savePrompt(prompt) {
           v-for="conv in pinnedList"
           :key="conv.id"
           class="conv-item"
-          :class="{ active: conv.id === chatStore.currentId, expanded: expandedId === conv.id }"
+          :class="{ active: conv.id === chatStore.currentId }"
           @click="handleSelect(conv.id)"
         >
           <template v-if="editingId === conv.id">
@@ -189,14 +187,18 @@ async function savePrompt(prompt) {
           <template v-else>
             <span class="pin-icon">📌</span>
             <span class="conv-title">{{ conv.title }}</span>
-            <button class="expand-btn" @click.stop="toggleExpand(conv.id)">⋯</button>
-            <div class="conv-actions">
-              <el-button text size="small" class="action-btn" @click.stop="startRename(conv)">重命名</el-button>
-              <el-button text size="small" class="action-btn" @click.stop="handlePin(conv)">取消置顶</el-button>
-              <el-button text size="small" class="action-btn" @click.stop="openPromptDialog(conv)">提示词</el-button>
-              <el-button text size="small" class="action-btn" @click.stop="handleArchive(conv)">归档</el-button>
-              <el-button text size="small" class="action-btn delete-btn" @click.stop="handleDelete(conv)">删除</el-button>
-            </div>
+            <el-dropdown trigger="click" @command="(cmd) => handleConvAction(cmd, conv)">
+              <button class="more-btn" @click.stop>⋯</button>
+              <template #dropdown>
+                <el-dropdown-menu>
+                  <el-dropdown-item command="rename">重命名</el-dropdown-item>
+                  <el-dropdown-item command="pin">取消置顶</el-dropdown-item>
+                  <el-dropdown-item command="prompt">提示词</el-dropdown-item>
+                  <el-dropdown-item command="archive">归档</el-dropdown-item>
+                  <el-dropdown-item command="delete" divided>删除</el-dropdown-item>
+                </el-dropdown-menu>
+              </template>
+            </el-dropdown>
           </template>
         </div>
       </template>
@@ -208,7 +210,7 @@ async function savePrompt(prompt) {
           v-for="conv in normalList"
           :key="conv.id"
           class="conv-item"
-          :class="{ active: conv.id === chatStore.currentId, expanded: expandedId === conv.id }"
+          :class="{ active: conv.id === chatStore.currentId }"
           @click="handleSelect(conv.id)"
         >
           <template v-if="editingId === conv.id">
@@ -223,14 +225,18 @@ async function savePrompt(prompt) {
           </template>
           <template v-else>
             <span class="conv-title">{{ conv.title }}</span>
-            <button class="expand-btn" @click.stop="toggleExpand(conv.id)">⋯</button>
-            <div class="conv-actions">
-              <el-button text size="small" class="action-btn" @click.stop="startRename(conv)">重命名</el-button>
-              <el-button text size="small" class="action-btn" @click.stop="handlePin(conv)">置顶</el-button>
-              <el-button text size="small" class="action-btn" @click.stop="openPromptDialog(conv)">提示词</el-button>
-              <el-button text size="small" class="action-btn" @click.stop="handleArchive(conv)">归档</el-button>
-              <el-button text size="small" class="action-btn delete-btn" @click.stop="handleDelete(conv)">删除</el-button>
-            </div>
+            <el-dropdown trigger="click" @command="(cmd) => handleConvAction(cmd, conv)">
+              <button class="more-btn" @click.stop>⋯</button>
+              <template #dropdown>
+                <el-dropdown-menu>
+                  <el-dropdown-item command="rename">重命名</el-dropdown-item>
+                  <el-dropdown-item command="pin">置顶</el-dropdown-item>
+                  <el-dropdown-item command="prompt">提示词</el-dropdown-item>
+                  <el-dropdown-item command="archive">归档</el-dropdown-item>
+                  <el-dropdown-item command="delete" divided>删除</el-dropdown-item>
+                </el-dropdown-menu>
+              </template>
+            </el-dropdown>
           </template>
         </div>
       </template>
@@ -397,48 +403,26 @@ async function savePrompt(prompt) {
   color: var(--text-primary);
 }
 
-.conv-actions {
-  display: none;
-  position: absolute;
-  right: 8px;
-  top: 50%;
-  transform: translateY(-50%);
-  gap: 2px;
-  background: var(--bg-secondary);
-  padding: 2px 4px;
-  border-radius: var(--radius-sm);
-  box-shadow: var(--shadow);
-}
-
-.conv-item:hover .conv-actions {
-  display: flex;
-}
-
-.action-btn {
-  font-size: 11px;
-  color: var(--text-muted);
-  padding: 2px 4px;
-  height: auto;
-}
-
-.action-btn:hover {
-  color: var(--text-primary);
-}
-
-.delete-btn:hover {
-  color: var(--danger);
-}
-
-.expand-btn {
+.more-btn {
   display: none;
   background: none;
   border: none;
   color: var(--text-muted);
   font-size: 16px;
   cursor: pointer;
-  padding: 2px 4px;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
   flex-shrink: 0;
   line-height: 1;
+}
+
+.conv-item:hover .more-btn {
+  display: block;
+}
+
+.more-btn:hover {
+  color: var(--text-primary);
+  background: var(--bg-tertiary);
 }
 
 .edit-input {
@@ -543,23 +527,8 @@ async function savePrompt(prompt) {
     transform: translateX(0);
   }
 
-  .expand-btn {
+  .more-btn {
     display: block;
-  }
-
-  .conv-item:hover .conv-actions {
-    display: none;
-  }
-
-  .conv-item.expanded .conv-actions {
-    display: flex;
-    position: static;
-    transform: none;
-    box-shadow: none;
-    background: transparent;
-    padding: 4px 0 0;
-    flex-wrap: wrap;
-    gap: 4px;
   }
 }
 </style>
