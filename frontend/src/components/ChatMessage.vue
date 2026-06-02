@@ -15,7 +15,7 @@ marked.setOptions({
 </script>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { useUserStore } from '../stores/user'
 
@@ -38,17 +38,7 @@ const rowStyle = computed(() => {
 })
 
 const emit = defineEmits(['regenerate', 'edit', 'delete'])
-
-marked.setOptions({
-  highlight(code, lang) {
-    if (lang && hljs.getLanguage(lang)) {
-      return hljs.highlight(code, { language: lang }).value
-    }
-    return hljs.highlightAuto(code).value
-  },
-  breaks: true,
-  gfm: true,
-})
+const bubbleRef = ref(null)
 
 const rendered = computed(() => {
   if (props.role === 'user') return null
@@ -73,7 +63,11 @@ const bubbleStyle = computed(() => ({
 }))
 
 function copyContent() {
-  navigator.clipboard.writeText(props.content).then(() => {
+  let text = props.content
+  if (props.role === 'assistant' && bubbleRef.value) {
+    text = bubbleRef.value.querySelector('.content')?.innerText || props.content
+  }
+  navigator.clipboard.writeText(text).then(() => {
     ElMessage.success('已复制')
   })
 }
@@ -84,7 +78,7 @@ function copyContent() {
     <div class="avatar" :class="role">
       {{ avatarDisplay }}
     </div>
-    <div class="bubble" :style="bubbleStyle">
+    <div ref="bubbleRef" class="bubble" :style="bubbleStyle">
       <div v-if="role === 'user'" class="content" v-text="content"></div>
       <div v-else class="content markdown-body" v-html="rendered"></div>
       <div v-if="!loading && content" class="msg-actions">

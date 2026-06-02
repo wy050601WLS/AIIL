@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { useRouter } from 'vue-router'
 import { useChatStore } from '../stores/chat'
 import { useUserStore } from '../stores/user'
 import { useThemeStore } from '../stores/theme'
@@ -14,6 +15,7 @@ const emit = defineEmits(['close'])
 const chatStore = useChatStore()
 const userStore = useUserStore()
 const themeStore = useThemeStore()
+const router = useRouter()
 
 const editingId = ref(null)
 const editTitle = ref('')
@@ -21,11 +23,18 @@ const searchQuery = ref('')
 const promptDialogVisible = ref(false)
 const promptConvId = ref(null)
 const promptConvPrompt = ref('')
+const expandedId = ref(null)
 
 const searchFiltered = computed(() => {
   if (!searchQuery.value.trim()) return null
   const q = searchQuery.value.toLowerCase()
-  return chatStore.filteredConversations.filter(c => c.title.toLowerCase().includes(q))
+  let list = chatStore.conversations
+  if (!chatStore.showArchived) {
+    list = list.filter(c => !c.archived)
+  } else {
+    list = list.filter(c => c.archived)
+  }
+  return list.filter(c => c.title.toLowerCase().includes(q))
 })
 
 const pinnedList = computed(() => {
@@ -38,6 +47,8 @@ const normalList = computed(() => {
   return src.filter(c => !c.pinned)
 })
 
+const archivedCount = computed(() => chatStore.conversations.filter(c => c.archived).length)
+
 async function handleNew() {
   await chatStore.newConversation()
   emit('close')
@@ -45,8 +56,17 @@ async function handleNew() {
 
 async function handleSelect(id) {
   if (editingId.value === id) return
+  if (expandedId.value === id) {
+    expandedId.value = null
+    return
+  }
+  expandedId.value = null
   await chatStore.selectConversation(id)
   emit('close')
+}
+
+function toggleExpand(id) {
+  expandedId.value = expandedId.value === id ? null : id
 }
 
 function handleLogout() {
@@ -54,7 +74,8 @@ function handleLogout() {
 }
 
 function goSettings() {
-  window.location.href = '/settings'
+  emit('close')
+  router.push('/settings')
 }
 
 function startRename(conv) {
@@ -130,7 +151,7 @@ async function savePrompt(prompt) {
 
     <div class="archive-toggle">
       <el-button text size="small" @click="chatStore.toggleShowArchived">
-        {{ chatStore.showArchived ? '返回会话' : '已归档' }}
+        {{ chatStore.showArchived ? '返回会话' : `已归档${archivedCount > 0 ? ` (${archivedCount})` : ''}` }}
       </el-button>
     </div>
 
@@ -142,7 +163,7 @@ async function savePrompt(prompt) {
           v-for="conv in pinnedList"
           :key="conv.id"
           class="conv-item"
-          :class="{ active: conv.id === chatStore.currentId }"
+          :class="{ active: conv.id === chatStore.currentId, expanded: expandedId === conv.id }"
           @click="handleSelect(conv.id)"
         >
           <template v-if="editingId === conv.id">
@@ -158,6 +179,7 @@ async function savePrompt(prompt) {
           <template v-else>
             <span class="pin-icon">📌</span>
             <span class="conv-title">{{ conv.title }}</span>
+            <button class="expand-btn" @click.stop="toggleExpand(conv.id)">⋯</button>
             <div class="conv-actions">
               <el-button text size="small" class="action-btn" @click.stop="startRename(conv)">重命名</el-button>
               <el-button text size="small" class="action-btn" @click.stop="handlePin(conv)">取消置顶</el-button>
@@ -176,7 +198,7 @@ async function savePrompt(prompt) {
           v-for="conv in normalList"
           :key="conv.id"
           class="conv-item"
-          :class="{ active: conv.id === chatStore.currentId }"
+          :class="{ active: conv.id === chatStore.currentId, expanded: expandedId === conv.id }"
           @click="handleSelect(conv.id)"
         >
           <template v-if="editingId === conv.id">
@@ -191,6 +213,7 @@ async function savePrompt(prompt) {
           </template>
           <template v-else>
             <span class="conv-title">{{ conv.title }}</span>
+            <button class="expand-btn" @click.stop="toggleExpand(conv.id)">⋯</button>
             <div class="conv-actions">
               <el-button text size="small" class="action-btn" @click.stop="startRename(conv)">重命名</el-button>
               <el-button text size="small" class="action-btn" @click.stop="handlePin(conv)">置顶</el-button>
@@ -386,6 +409,18 @@ async function savePrompt(prompt) {
   color: var(--danger);
 }
 
+.expand-btn {
+  display: none;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 16px;
+  cursor: pointer;
+  padding: 2px 4px;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
 .edit-input {
   width: 100%;
   background: var(--bg-tertiary);
@@ -466,8 +501,23 @@ async function savePrompt(prompt) {
     transform: translateX(0);
   }
 
+  .expand-btn {
+    display: block;
+  }
+
   .conv-item:hover .conv-actions {
     display: none;
+  }
+
+  .conv-item.expanded .conv-actions {
+    display: flex;
+    position: static;
+    transform: none;
+    box-shadow: none;
+    background: transparent;
+    padding: 4px 0 0;
+    flex-wrap: wrap;
+    gap: 4px;
   }
 }
 </style>

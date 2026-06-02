@@ -56,7 +56,11 @@ const rules = {
 }
 
 async function handleSubmit() {
-  await formRef.value.validate()
+  try {
+    await formRef.value.validate()
+  } catch {
+    return
+  }
   loading.value = true
   try {
     await changePassword(form.oldPassword, form.newPassword)

@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import { ElMessage } from 'element-plus'
 import {
   createConversation, getConversations, getMessages, streamChat,
   renameConversation, deleteConversation, getModels, exportConversation,
@@ -92,8 +93,14 @@ export const useChatStore = defineStore('chat', () => {
         () => { loading.value = false },
         currentModel.value || undefined,
       )
+      if (!messages.value[idx].content) {
+        messages.value.splice(idx, 1)
+        ElMessage.error('AI 未返回回复，请重试')
+      }
     } catch {
+      messages.value.splice(idx, 1)
       loading.value = false
+      ElMessage.error('请求失败，请检查网络后重试')
     }
   }
 
