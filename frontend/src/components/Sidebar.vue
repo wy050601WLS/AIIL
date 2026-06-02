@@ -146,8 +146,8 @@ async function savePrompt(prompt) {
   <aside class="sidebar" :class="{ visible }">
     <div class="sidebar-header">
       <h2 class="logo">AI 智慧学习</h2>
-      <el-button type="primary" text class="new-btn" @click="handleNew">
-        + 新对话
+      <el-button type="primary" class="new-btn" @click="handleNew">
+        <span class="new-btn-icon">+</span> 新对话
       </el-button>
     </div>
 
@@ -246,13 +246,22 @@ async function savePrompt(prompt) {
         <span class="username">{{ userStore.displayName }}</span>
       </div>
       <div class="footer-actions">
-        <el-button text size="small" @click="goDashboard">面板</el-button>
-        <el-button text size="small" @click="goCards">卡片</el-button>
-        <el-button text size="small" @click="themeStore.toggle">
-          {{ themeStore.theme === 'dark' ? '浅色' : '深色' }}
-        </el-button>
-        <el-button text size="small" @click="goSettings">设置</el-button>
-        <el-button text size="small" @click="handleLogout">退出</el-button>
+        <button class="footer-btn" title="学习面板" @click="goDashboard">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        </button>
+        <button class="footer-btn" title="知识卡片" @click="goCards">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+        </button>
+        <button class="footer-btn" :title="themeStore.theme === 'dark' ? '切换浅色' : '切换深色'" @click="themeStore.toggle">
+          <svg v-if="themeStore.theme === 'dark'" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+          <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        </button>
+        <button class="footer-btn" title="设置" @click="goSettings">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        </button>
+        <button class="footer-btn danger" title="退出登录" @click="handleLogout">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        </button>
       </div>
     </div>
   </aside>
@@ -295,14 +304,13 @@ async function savePrompt(prompt) {
   width: 100%;
   justify-content: center;
   height: 36px;
-  border: 1px solid var(--border-light);
   border-radius: var(--radius-sm);
-  color: var(--text-primary);
+  font-weight: 600;
 }
 
-.new-btn:hover {
-  background: var(--bg-hover);
-  border-color: var(--accent);
+.new-btn-icon {
+  font-size: 16px;
+  margin-right: 2px;
 }
 
 .search-box {
@@ -477,7 +485,29 @@ async function savePrompt(prompt) {
 
 .footer-actions {
   display: flex;
-  gap: 4px;
+  gap: 2px;
+}
+
+.footer-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 6px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s, background 0.15s;
+}
+
+.footer-btn:hover {
+  color: var(--text-primary);
+  background: var(--bg-hover);
+}
+
+.footer-btn.danger:hover {
+  color: var(--danger);
 }
 
 /* 移动端 */

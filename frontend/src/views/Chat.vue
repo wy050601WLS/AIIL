@@ -152,7 +152,6 @@ async function handleSaveCard(msg) {
       <div ref="messagesAreaRef" class="messages-area">
         <div v-if="chatStore.messages.length === 0" class="welcome">
           <h2>有什么可以帮你的？</h2>
-          <p>输入你的问题，AI 将为你解答</p>
         </div>
 
         <ChatMessage
