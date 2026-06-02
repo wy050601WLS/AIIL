@@ -40,10 +40,6 @@ export function archiveConversation(conversationId) {
   return api.put(`/conversations/${conversationId}/archive`)
 }
 
-export function updateSystemPrompt(conversationId, systemPrompt) {
-  return api.put(`/conversations/${conversationId}/system-prompt`, { system_prompt: systemPrompt })
-}
-
 export async function exportConversation(conversationId) {
   const token = localStorage.getItem('token')
   const res = await fetch(`/api/conversations/${conversationId}/export`, {

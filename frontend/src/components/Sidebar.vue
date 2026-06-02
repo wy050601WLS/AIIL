@@ -5,8 +5,6 @@ import { useRouter } from 'vue-router'
 import { useChatStore } from '../stores/chat'
 import { useUserStore } from '../stores/user'
 import { useThemeStore } from '../stores/theme'
-import SystemPromptDialog from './SystemPromptDialog.vue'
-
 defineProps({
   visible: { type: Boolean, default: true },
 })
@@ -20,9 +18,6 @@ const router = useRouter()
 const editingId = ref(null)
 const editTitle = ref('')
 const searchQuery = ref('')
-const promptDialogVisible = ref(false)
-const promptConvId = ref(null)
-const promptConvPrompt = ref('')
 
 const searchFiltered = computed(() => {
   if (!searchQuery.value.trim()) return null
@@ -51,7 +46,6 @@ const archivedCount = computed(() => chatStore.conversations.filter(c => c.archi
 function handleConvAction(cmd, conv) {
   if (cmd === 'rename') startRename(conv)
   else if (cmd === 'pin') handlePin(conv)
-  else if (cmd === 'prompt') openPromptDialog(conv)
   else if (cmd === 'archive') handleArchive(conv)
   else if (cmd === 'delete') handleDelete(conv)
 }
@@ -126,17 +120,6 @@ async function handleArchive(conv) {
   await chatStore.archive(conv.id)
   ElMessage.success(conv.archived ? '已取消归档' : '已归档')
 }
-
-function openPromptDialog(conv) {
-  promptConvId.value = conv.id
-  promptConvPrompt.value = conv.system_prompt || ''
-  promptDialogVisible.value = true
-}
-
-async function savePrompt(prompt) {
-  await chatStore.updateSystemPrompt(promptConvId.value, prompt)
-  ElMessage.success('系统提示词已保存')
-}
 </script>
 
 <template>
@@ -193,7 +176,6 @@ async function savePrompt(prompt) {
                 <el-dropdown-menu>
                   <el-dropdown-item command="rename">重命名</el-dropdown-item>
                   <el-dropdown-item command="pin">取消置顶</el-dropdown-item>
-                  <el-dropdown-item command="prompt">提示词</el-dropdown-item>
                   <el-dropdown-item command="archive">归档</el-dropdown-item>
                   <el-dropdown-item command="delete" divided>删除</el-dropdown-item>
                 </el-dropdown-menu>
@@ -231,7 +213,6 @@ async function savePrompt(prompt) {
                 <el-dropdown-menu>
                   <el-dropdown-item command="rename">重命名</el-dropdown-item>
                   <el-dropdown-item command="pin">置顶</el-dropdown-item>
-                  <el-dropdown-item command="prompt">提示词</el-dropdown-item>
                   <el-dropdown-item command="archive">归档</el-dropdown-item>
                   <el-dropdown-item command="delete" divided>删除</el-dropdown-item>
                 </el-dropdown-menu>
@@ -271,12 +252,6 @@ async function savePrompt(prompt) {
       </div>
     </div>
   </aside>
-
-  <SystemPromptDialog
-    v-model:visible="promptDialogVisible"
-    :initial-prompt="promptConvPrompt"
-    @save="savePrompt"
-  />
 </template>
 
 <style scoped>

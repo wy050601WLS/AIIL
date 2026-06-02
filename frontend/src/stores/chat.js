@@ -6,7 +6,6 @@ import {
   renameConversation, deleteConversation, getModels, exportConversation,
   editMessage as editMessageApi, deleteMessage as deleteMessageApi,
   pinConversation as pinConversationApi, archiveConversation as archiveConversationApi,
-  updateSystemPrompt as updateSystemPromptApi,
 } from '../api/chat'
 import { useUserStore } from './user'
 
@@ -203,18 +202,11 @@ export const useChatStore = defineStore('chat', () => {
     showArchived.value = !showArchived.value
   }
 
-  async function updateSystemPrompt(conversationId, systemPrompt) {
-    await updateSystemPromptApi(conversationId, systemPrompt)
-    const conv = conversations.value.find(c => c.id === conversationId)
-    if (conv) conv.system_prompt = systemPrompt
-  }
-
   return {
     conversations, currentId, messages, loading, models, currentModel,
     showArchived, filteredConversations, pinnedConversations, normalConversations,
     loadConversations, newConversation, selectConversation, sendMessage,
     rename, remove, regenerate, stopStreaming, loadModels, setModel, exportCurrent,
     editMessage, deleteMessage, pin, archive, toggleShowArchived,
-    updateSystemPrompt,
   }
 })

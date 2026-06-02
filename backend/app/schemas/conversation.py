@@ -17,7 +17,6 @@ class ConversationResponse(BaseModel):
     title: str
     pinned: bool = False
     archived: bool = False
-    system_prompt: Optional[str] = None
     created_at: datetime
 
     model_config = {"from_attributes": True}
@@ -39,10 +38,6 @@ class ChatRequest(BaseModel):
     model: str | None = None
     regenerate: bool = False
     images: list[str] | None = None
-
-
-class SystemPromptUpdate(BaseModel):
-    system_prompt: Optional[str] = None
 
 
 class KnowledgeCardCreate(BaseModel):

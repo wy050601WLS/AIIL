@@ -89,16 +89,3 @@ def toggle_archive(conversation_id: int, user: User, db: Session) -> Conversatio
     db.commit()
     db.refresh(conv)
     return ConversationResponse.model_validate(conv)
-
-
-def update_system_prompt(conversation_id: int, system_prompt: str | None, user: User, db: Session) -> ConversationResponse:
-    conv = db.query(Conversation).filter(
-        Conversation.id == conversation_id,
-        Conversation.user_id == user.id,
-    ).first()
-    if not conv:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="会话不存在")
-    conv.system_prompt = system_prompt
-    db.commit()
-    db.refresh(conv)
-    return ConversationResponse.model_validate(conv)

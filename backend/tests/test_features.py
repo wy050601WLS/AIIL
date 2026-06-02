@@ -23,16 +23,6 @@ def test_archive_conversation(auth_client):
     assert res.json()["archived"] is False
 
 
-def test_system_prompt(auth_client):
-    conv_id = _create_conv(auth_client)
-    res = auth_client.put(
-        f"/conversations/{conv_id}/system-prompt",
-        json={"system_prompt": "你是一个数学老师"},
-    )
-    assert res.status_code == 200
-    assert res.json()["system_prompt"] == "你是一个数学老师"
-
-
 def test_update_profile(auth_client):
     res = auth_client.put("/auth/profile", json={
         "nickname": "小明",
