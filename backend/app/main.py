@@ -13,7 +13,7 @@ from slowapi.errors import RateLimitExceeded
 
 from app.config import settings
 from app.database import Base  # noqa: F401 — 确保 SQLAlchemy 模型被注册到 Base.metadata
-from app.routers import auth, history, chat, cards, dashboard
+from app.routers import auth, history, chat, cards, dashboard, templates
 
 # 全局限流器：每个 IP 每分钟最多 60 次请求
 limiter = Limiter(key_func=get_remote_address, default_limits=["60/minute"])
@@ -37,6 +37,7 @@ app.include_router(history.router)    # 会话管理：CRUD/置顶/归档/导出
 app.include_router(chat.router)       # AI 对话：SSE 流式/消息编辑/模型列表
 app.include_router(cards.router)      # 知识卡片：增删查
 app.include_router(dashboard.router)  # 学习面板：统计数据
+app.include_router(templates.router)  # 对话模板：增删查改
 
 
 @app.get("/")

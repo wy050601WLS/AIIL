@@ -557,3 +557,22 @@ AIIL/
 - 每收到一个 content chunk 立即 yield，而非先收集到列表
 - chat 端点改为 async def，内部异步生成器边转发边收集完整回复
 - 流结束后将完整回复存入数据库（保证数据持久化）
+
+---
+
+## 阶段二十三：对话模板功能
+
+新增对话模板系统，支持预设 prompt 模板和用户自定义模板，快速发起常用对话。
+
+### V-1：后端模板 CRUD
+- 新增 PromptTemplate 模型（prompt_templates 表），user_id 为 NULL 表示系统内置模板
+- 新增 TemplateCreate / TemplateUpdate / TemplateResponse schema
+- 新增 /templates 路由：GET（列表）、POST（创建）、PUT（更新）、DELETE（删除）
+- 内置 5 个学习场景模板：翻译为中文、概念解释、练习题、代码审查、总结要点
+- 首次访问时自动种子内置模板
+
+### V-2：前端模板集成
+- 新增 api/templates.js 和 stores/templates.js
+- ChatInput.vue 新增模板选择面板（el-popover），按分类分组展示，点击即填充输入框
+- 支持「保存为模板」：将当前输入框内容保存为自定义模板
+- Settings.vue 新增模板管理区域：查看/编辑/删除自定义模板

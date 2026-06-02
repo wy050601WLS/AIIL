@@ -1,4 +1,4 @@
-"""会话、消息、卡片和面板相关 Pydantic 模型
+"""会话、消息、卡片、模板和面板相关 Pydantic 模型
 
 定义对话系统所有请求/响应的数据结构。
 """
@@ -78,6 +78,34 @@ class KnowledgeCardResponse(BaseModel):
     content: str
     source: str | None = None
     tags: str | None = None
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+# ===== 对话模板相关 =====
+
+class TemplateCreate(BaseModel):
+    """创建对话模板请求体"""
+    title: str = Field(..., min_length=1, max_length=100)
+    content: str = Field(..., min_length=1)
+    category: str | None = Field(None, max_length=50)
+
+
+class TemplateUpdate(BaseModel):
+    """更新对话模板请求体（所有字段可选）"""
+    title: str | None = Field(None, min_length=1, max_length=100)
+    content: str | None = Field(None, min_length=1)
+    category: str | None = None
+
+
+class TemplateResponse(BaseModel):
+    """对话模板响应体"""
+    id: int
+    title: str
+    content: str
+    category: str | None = None
+    is_builtin: bool = False
     created_at: datetime
 
     model_config = {"from_attributes": True}

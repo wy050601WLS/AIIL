@@ -1,7 +1,7 @@
-"""会话、消息和知识卡片模型模块
+"""会话、消息、知识卡片和对话模板模型模块
 
-定义核心业务模型：Conversation（会话）、Message（消息）、KnowledgeCard（知识卡片）。
-三者关系：User 1→N Conversation 1→N Message，User 1→N KnowledgeCard。
+定义核心业务模型：Conversation（会话）、Message（消息）、KnowledgeCard（知识卡片）、PromptTemplate（对话模板）。
+关系：User 1→N Conversation 1→N Message，User 1→N KnowledgeCard，User 1→N PromptTemplate。
 """
 
 from datetime import datetime
@@ -65,4 +65,22 @@ class KnowledgeCard(Base):
     content = Column(Text, nullable=False)                               # 卡片内容
     source = Column(String(200), nullable=True)                          # 来源标记（如对话 ID）
     tags = Column(String(500), nullable=True)                            # 标签，逗号分隔
+    created_at = Column(DateTime, default=datetime.now)
+
+
+class PromptTemplate(Base):
+    """对话模板表模型
+
+    预设的 prompt 模板，用于快速发起常用对话。
+    user_id 为 NULL 时表示系统内置模板（所有用户可见），非 NULL 时表示用户自建模板。
+    """
+
+    __tablename__ = "prompt_templates"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=True, index=True)
+    title = Column(String(100), nullable=False)                          # 模板标题
+    content = Column(Text, nullable=False)                               # 模板 prompt 内容
+    category = Column(String(50), nullable=True)                         # 分类标签（翻译/解释/练习等）
+    is_builtin = Column(Boolean, default=False)                          # 是否为系统内置模板
     created_at = Column(DateTime, default=datetime.now)

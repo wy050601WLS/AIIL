@@ -1,6 +1,6 @@
 -- AI 智慧学习系统数据库初始化脚本
 -- 数据库: ai
--- 最后同步: 2026-06-02
+-- 最后同步: 2026-06-02（新增 prompt_templates 表）
 
 USE ai;
 
@@ -47,6 +47,19 @@ CREATE TABLE IF NOT EXISTS knowledge_cards (
     content TEXT NOT NULL,
     source VARCHAR(200) DEFAULT NULL,
     tags VARCHAR(500) DEFAULT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    INDEX idx_user_id (user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 对话模板表
+CREATE TABLE IF NOT EXISTS prompt_templates (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT DEFAULT NULL,
+    title VARCHAR(100) NOT NULL,
+    content TEXT NOT NULL,
+    category VARCHAR(50) DEFAULT NULL,
+    is_builtin TINYINT(1) DEFAULT 0,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     INDEX idx_user_id (user_id)

@@ -1,28 +1,37 @@
 <!--
   ChatInput 组件 — 对话输入区
 
-  功能：文本输入、图片上传（点击/粘贴）、语音输入、发送/停止按钮
+  功能：文本输入、图片上传（点击/粘贴）、语音输入、对话模板、发送/停止按钮
   Props: loading (Boolean) — AI 是否正在生成
   Events: send({content, images[]}) — 发送消息, stop — 停止生成
 -->
 <script setup>
-import { ref, nextTick, onUnmounted, computed } from 'vue'
+import { ref, nextTick, onUnmounted, computed, onMounted } from 'vue'
+import { ElMessage } from 'element-plus'
+import { useTemplatesStore } from '../stores/templates'
 
 defineProps({
   loading: { type: Boolean, default: false },
 })
 
 const emit = defineEmits(['send', 'stop'])
+const templatesStore = useTemplatesStore()
 const input = ref('')               // 输入框文本
 const textareaRef = ref(null)       // textarea DOM 引用
 const fileInputRef = ref(null)      // 隐藏的 file input 引用
 const images = ref([])              // 待发送的图片列表 [{ name, dataUrl }]
 const isRecording = ref(false)      // 是否正在录音
+const templatePopoverVisible = ref(false)  // 模板选择面板是否显示
+const saveDialogVisible = ref(false)       // 保存模板对话框是否显示
+const saveTitle = ref('')                  // 保存模板时的标题输入
+const saveCategory = ref('')               // 保存模板时的分类输入
 let recognition = null              // Web SpeechRecognition 实例
 
 // 浏览器语音识别 API（兼容 webkit 前缀）
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
 const speechSupported = computed(() => !!SpeechRecognition)
+
+onMounted(() => { templatesStore.loadTemplates() })
 
 /** 自动调整 textarea 高度（最大 150px） */
 function autoResize() {
@@ -141,6 +150,35 @@ function handlePaste(e) {
     }
   }
 }
+
+// ===== 对话模板 =====
+
+/** 选择模板：将模板内容填充到输入框 */
+function selectTemplate(content) {
+  input.value = content
+  templatePopoverVisible.value = false
+  nextTick(() => {
+    autoResize()
+    textareaRef.value?.focus()
+  })
+}
+
+/** 打开保存模板对话框 */
+function openSaveDialog() {
+  saveTitle.value = ''
+  saveCategory.value = ''
+  saveDialogVisible.value = true
+}
+
+/** 确认保存当前输入为模板 */
+async function confirmSaveTemplate() {
+  if (!saveTitle.value.trim()) {
+    ElMessage.warning('请输入模板标题')
+    return
+  }
+  await templatesStore.addTemplate(saveTitle.value.trim(), input.value.trim(), saveCategory.value.trim() || null)
+  saveDialogVisible.value = false
+}
 </script>
 
 <template>
@@ -175,6 +213,46 @@ function handlePaste(e) {
         </svg>
         <span v-if="isRecording" class="pulse-dot"></span>
       </button>
+      <el-popover
+        v-model:visible="templatePopoverVisible"
+        placement="top-start"
+        :width="320"
+        trigger="click"
+      >
+        <template #reference>
+          <button class="tool-btn" title="对话模板">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+              <line x1="16" y1="13" x2="8" y2="13"/>
+              <line x1="16" y1="17" x2="8" y2="17"/>
+              <polyline points="10 9 9 9 8 9"/>
+            </svg>
+          </button>
+        </template>
+        <div class="template-panel">
+          <div class="template-header">
+            <span class="template-title">对话模板</span>
+            <el-button v-if="input.trim()" type="primary" text size="small" @click="openSaveDialog">保存为模板</el-button>
+          </div>
+          <div v-if="templatesStore.loading" class="template-loading">加载中...</div>
+          <div v-else-if="templatesStore.templates.length === 0" class="template-empty">暂无模板</div>
+          <div v-else class="template-list">
+            <div v-for="(items, cat) in templatesStore.groupedTemplates" :key="cat" class="template-group">
+              <div class="template-group-label">{{ cat }}</div>
+              <div
+                v-for="t in items"
+                :key="t.id"
+                class="template-item"
+                @click="selectTemplate(t.content)"
+              >
+                <span class="template-item-title">{{ t.title }}</span>
+                <span class="template-item-preview">{{ t.content.slice(0, 30) }}...</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </el-popover>
       <textarea
         ref="textareaRef"
         v-model="input"
@@ -202,6 +280,24 @@ function handlePaste(e) {
         发送
       </button>
     </div>
+    <!-- 保存模板对话框 -->
+    <el-dialog v-model="saveDialogVisible" title="保存为模板" width="400px" append-to-body>
+      <el-form label-width="60px">
+        <el-form-item label="标题">
+          <el-input v-model="saveTitle" placeholder="给模板起个名字" maxlength="100" />
+        </el-form-item>
+        <el-form-item label="分类">
+          <el-input v-model="saveCategory" placeholder="如：翻译、解释、练习（可选）" maxlength="50" />
+        </el-form-item>
+        <el-form-item label="内容">
+          <el-input type="textarea" :model-value="input" :rows="3" disabled />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="saveDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="confirmSaveTemplate">保存</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -383,5 +479,73 @@ function handlePaste(e) {
   .input-box {
     font-size: 16px; /* prevent iOS zoom */
   }
+}
+
+/* ===== 模板选择面板 ===== */
+
+.template-panel {
+  max-height: 360px;
+  overflow-y: auto;
+}
+
+.template-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.template-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.template-loading,
+.template-empty {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 13px;
+  padding: 16px 0;
+}
+
+.template-group {
+  margin-bottom: 8px;
+}
+
+.template-group-label {
+  font-size: 12px;
+  color: var(--text-muted);
+  padding: 4px 0;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 4px;
+}
+
+.template-item {
+  padding: 6px 8px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.template-item:hover {
+  background: var(--bg-secondary);
+}
+
+.template-item-title {
+  display: block;
+  font-size: 13px;
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.template-item-preview {
+  display: block;
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 </style>

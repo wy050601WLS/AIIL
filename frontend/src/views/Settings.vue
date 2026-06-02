@@ -1,17 +1,19 @@
 <!--
   Settings 视图 — 用户设置页
 
-  功能：个人信息（昵称/头像）、偏好设置（字体/密度/默认模型）、修改密码
+  功能：个人信息（昵称/头像）、偏好设置（字体/密度/默认模型）、修改密码、对话模板管理
   页面加载时从后端获取最新资料填充表单
 -->
 <script setup>
-import { reactive, ref, onMounted } from 'vue'
+import { reactive, ref, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { changePassword } from '../api/auth'
 import { useUserStore } from '../stores/user'
+import { useTemplatesStore } from '../stores/templates'
 import { useRouter } from 'vue-router'
 
 const userStore = useUserStore()
+const templatesStore = useTemplatesStore()
 const router = useRouter()
 const formRef = ref(null)
 const loading = ref(false)
@@ -35,6 +37,15 @@ const prefForm = reactive({
   defaultModel: '',
 })
 
+// 模板编辑状态
+const editingTemplate = ref(null)   // 正在编辑的模板对象
+const editTitle = ref('')
+const editContent = ref('')
+const editCategory = ref('')
+
+/** 用户自建的模板列表（排除内置模板） */
+const userTemplates = computed(() => templatesStore.templates.filter(t => !t.is_builtin))
+
 // 页面加载时从后端获取最新资料并填充表单
 onMounted(async () => {
   await userStore.loadProfile()
@@ -43,6 +54,7 @@ onMounted(async () => {
   prefForm.fontSize = userStore.preferences?.fontSize || 15
   prefForm.messageDensity = userStore.preferences?.messageDensity || 'normal'
   prefForm.defaultModel = userStore.preferences?.defaultModel || ''
+  templatesStore.loadTemplates()
 })
 
 // 修改密码表单验证规则
@@ -110,6 +122,44 @@ async function savePreferences() {
 function goBack() {
   router.push('/')
 }
+
+// ===== 模板管理 =====
+
+/** 进入编辑模式 */
+function startEditTemplate(tpl) {
+  editingTemplate.value = tpl.id
+  editTitle.value = tpl.title
+  editContent.value = tpl.content
+  editCategory.value = tpl.category || ''
+}
+
+/** 取消编辑 */
+function cancelEditTemplate() {
+  editingTemplate.value = null
+}
+
+/** 保存模板编辑 */
+async function saveEditTemplate(tpl) {
+  if (!editTitle.value.trim() || !editContent.value.trim()) {
+    ElMessage.warning('标题和内容不能为空')
+    return
+  }
+  await templatesStore.editTemplate(tpl.id, {
+    title: editTitle.value.trim(),
+    content: editContent.value.trim(),
+    category: editCategory.value.trim() || null,
+  })
+  editingTemplate.value = null
+}
+
+/** 删除模板（带确认） */
+async function handleDeleteTemplate(tpl) {
+  try {
+    await templatesStore.removeTemplate(tpl.id)
+  } catch {
+    // 已在 store 中处理
+  }
+}
 </script>
 
 <template>
@@ -152,6 +202,37 @@ function goBack() {
           </el-radio-group>
         </div>
         <el-button type="primary" class="save-btn" @click="savePreferences">保存偏好</el-button>
+      </div>
+
+      <!-- 对话模板管理 -->
+      <div class="settings-section">
+        <h3>对话模板管理</h3>
+        <div v-if="templatesStore.loading" class="template-loading">加载中...</div>
+        <div v-else>
+          <div v-if="userTemplates.length === 0" class="template-empty">暂无自定义模板</div>
+          <div v-for="tpl in userTemplates" :key="tpl.id" class="template-manage-item">
+            <template v-if="editingTemplate === tpl.id">
+              <el-input v-model="editTitle" size="small" placeholder="标题" class="template-edit-field" />
+              <el-input v-model="editCategory" size="small" placeholder="分类（可选）" class="template-edit-field" />
+              <el-input v-model="editContent" type="textarea" :rows="2" placeholder="模板内容" class="template-edit-field" />
+              <div class="template-edit-actions">
+                <el-button type="primary" size="small" @click="saveEditTemplate(tpl)">保存</el-button>
+                <el-button size="small" @click="cancelEditTemplate">取消</el-button>
+              </div>
+            </template>
+            <template v-else>
+              <div class="template-manage-info">
+                <span class="template-manage-title">{{ tpl.title }}</span>
+                <span v-if="tpl.category" class="template-manage-cat">{{ tpl.category }}</span>
+                <span class="template-manage-preview">{{ tpl.content.slice(0, 50) }}...</span>
+              </div>
+              <div class="template-manage-actions">
+                <el-button type="primary" text size="small" @click="startEditTemplate(tpl)">编辑</el-button>
+                <el-button type="danger" text size="small" @click="handleDeleteTemplate(tpl)">删除</el-button>
+              </div>
+            </template>
+          </div>
+        </div>
       </div>
 
       <!-- 修改密码 -->
@@ -279,5 +360,73 @@ function goBack() {
   font-size: 14px;
   color: var(--text-secondary);
   margin-bottom: 8px;
+}
+
+/* ===== 模板管理 ===== */
+
+.template-loading,
+.template-empty {
+  color: var(--text-muted);
+  font-size: 13px;
+  padding: 8px 0;
+}
+
+.template-manage-item {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.template-manage-item:last-child {
+  border-bottom: none;
+}
+
+.template-manage-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.template-manage-title {
+  font-size: 14px;
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.template-manage-cat {
+  display: inline-block;
+  font-size: 11px;
+  color: var(--accent);
+  background: var(--accent-bg);
+  padding: 1px 6px;
+  border-radius: 8px;
+  margin-left: 8px;
+}
+
+.template-manage-preview {
+  display: block;
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.template-manage-actions {
+  flex-shrink: 0;
+  display: flex;
+  gap: 4px;
+  margin-left: 8px;
+}
+
+.template-edit-field {
+  margin-bottom: 8px;
+}
+
+.template-edit-actions {
+  display: flex;
+  gap: 8px;
 }
 </style>
