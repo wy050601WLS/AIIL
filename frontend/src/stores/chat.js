@@ -24,6 +24,8 @@ export const useChatStore = defineStore('chat', () => {
   const models = ref([])               // 可用的 AI 模型列表
   const currentModel = ref(localStorage.getItem('model') || '')  // 当前选中的模型
   const showArchived = ref(false)      // 是否显示已归档会话
+  const hasMore = ref(false)           // 是否还有更多历史消息可加载
+  const loadingMore = ref(false)       // 是否正在加载更多消息
   let abortController = null           // 用于中断 SSE 流的 AbortController
 
   /** 根据 showArchived 过滤会话列表 */
@@ -82,11 +84,26 @@ export const useChatStore = defineStore('chat', () => {
     return data
   }
 
-  /** 选中指定会话并加载其消息列表 */
+  /** 选中指定会话并加载最新的 50 条消息 */
   async function selectConversation(id) {
     currentId.value = id
-    const { data } = await getMessages(id)
-    messages.value = data
+    const { data } = await getMessages(id, 0, 50)
+    messages.value = data.messages
+    hasMore.value = data.total > 50
+  }
+
+  /** 加载更多历史消息（向上滚动时触发） */
+  async function loadMoreMessages() {
+    if (!currentId.value || loadingMore.value || !hasMore.value) return
+    loadingMore.value = true
+    try {
+      const { data } = await getMessages(currentId.value, messages.value.length, 50)
+      // 旧消息插入到列表头部
+      messages.value = [...data.messages, ...messages.value]
+      hasMore.value = messages.value.length < data.total
+    } finally {
+      loadingMore.value = false
+    }
   }
 
   /**
@@ -247,7 +264,9 @@ export const useChatStore = defineStore('chat', () => {
   return {
     conversations, currentId, messages, loading, models, currentModel,
     showArchived, filteredConversations, pinnedConversations, normalConversations,
+    hasMore, loadingMore,
     loadConversations, newConversation, selectConversation, sendMessage,
+    loadMoreMessages,
     rename, remove, regenerate, stopStreaming, loadModels, setModel, exportCurrent,
     editMessage, deleteMessage, pin, archive, toggleShowArchived,
   }

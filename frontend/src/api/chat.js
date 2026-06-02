@@ -17,9 +17,12 @@ export function getConversations() {
   return api.get('/conversations')
 }
 
-/** 获取指定会话的消息列表 */
-export function getMessages(conversationId) {
-  return api.get(`/conversations/${conversationId}/messages`)
+/** 获取指定会话的消息列表（支持分页：skip 跳过，limit 限制数量） */
+export function getMessages(conversationId, skip = 0, limit = 0) {
+  const params = {}
+  if (skip > 0) params.skip = skip
+  if (limit > 0) params.limit = limit
+  return api.get(`/conversations/${conversationId}/messages`, { params })
 }
 
 /** 重命名会话 */

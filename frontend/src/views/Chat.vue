@@ -33,8 +33,28 @@ function scrollToBottom() {
   })
 }
 
+/** 滚动事件处理：滚动到顶部时加载更多历史消息 */
+async function handleScroll() {
+  const el = messagesAreaRef.value
+  if (!el || !chatStore.hasMore || chatStore.loadingMore) return
+  // 距顶部 50px 时触发加载
+  if (el.scrollTop < 50) {
+    const prevHeight = el.scrollHeight
+    await chatStore.loadMoreMessages()
+    // 保持滚动位置不变（加载旧消息后页面高度增加，需补偿偏移）
+    nextTick(() => {
+      el.scrollTop = el.scrollHeight - prevHeight
+    })
+  }
+}
+
 // 监听消息数量变化和最后一条消息内容变化，自动滚动到底部
-watch(() => chatStore.messages.length, scrollToBottom)
+watch(() => chatStore.messages.length, (newLen, oldLen) => {
+  // 新消息追加到底部时才自动滚动（加载历史消息时不滚动）
+  if (newLen > oldLen && !chatStore.loadingMore) {
+    scrollToBottom()
+  }
+})
 watch(() => chatStore.messages[chatStore.messages.length - 1]?.content, scrollToBottom)
 
 onMounted(() => {
@@ -165,7 +185,8 @@ async function handleSaveCard(msg) {
         </div>
       </div>
 
-      <div ref="messagesAreaRef" class="messages-area">
+      <div ref="messagesAreaRef" class="messages-area" @scroll="handleScroll">
+        <div v-if="chatStore.loadingMore" class="loading-more">加载更多消息...</div>
         <div v-if="chatStore.messages.length === 0" class="welcome">
           <h2>有什么可以帮你的？</h2>
         </div>
@@ -235,6 +256,13 @@ async function handleSaveCard(msg) {
   flex: 1;
   overflow-y: auto;
   padding: 24px 0;
+}
+
+.loading-more {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 13px;
+  padding: 8px 0;
 }
 
 .welcome {

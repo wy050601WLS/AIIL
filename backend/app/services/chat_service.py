@@ -32,10 +32,14 @@ def list_conversations(user: User, db: Session) -> list[ConversationResponse]:
     return [ConversationResponse.model_validate(c) for c in convs]
 
 
-def get_messages(conversation_id: int, user: User, db: Session) -> list[MessageResponse]:
+def get_messages(conversation_id: int, user: User, db: Session, skip: int = 0, limit: int = 0) -> dict:
     """获取指定会话的消息列表（按时间正序）
 
-    先校验会话归属权，再返回该会话的所有消息。
+    先校验会话归属权，再返回该会话的消息。
+    支持分页：skip 跳过前 N 条，limit 限制返回数量（0 表示返回全部）。
+
+    Returns:
+        {"total": 总数, "messages": 消息列表}
     """
     conv = db.query(Conversation).filter(
         Conversation.id == conversation_id,
@@ -44,13 +48,21 @@ def get_messages(conversation_id: int, user: User, db: Session) -> list[MessageR
     if not conv:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="会话不存在")
 
-    messages = (
+    # 查询总数
+    total = db.query(Message).filter(Message.conversation_id == conversation_id).count()
+
+    query = (
         db.query(Message)
         .filter(Message.conversation_id == conversation_id)
         .order_by(Message.created_at.asc())
-        .all()
     )
-    return [MessageResponse.model_validate(m) for m in messages]
+    if skip > 0:
+        query = query.offset(skip)
+    if limit > 0:
+        query = query.limit(limit)
+
+    messages = query.all()
+    return {"total": total, "messages": [MessageResponse.model_validate(m) for m in messages]}
 
 
 def rename_conversation(conversation_id: int, title: str, user: User, db: Session) -> ConversationResponse:

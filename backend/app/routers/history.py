@@ -32,10 +32,21 @@ def list_all(user: User = Depends(get_current_user), db: Session = Depends(get_d
     return list_conversations(user, db)
 
 
-@router.get("/{conversation_id}/messages", response_model=list[MessageResponse])
-def messages(conversation_id: int, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    """获取指定会话的消息列表（按时间正序）"""
-    return get_messages(conversation_id, user, db)
+@router.get("/{conversation_id}/messages")
+def messages(
+    conversation_id: int,
+    skip: int = 0,
+    limit: int = 0,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """获取指定会话的消息列表（按时间正序，支持分页）
+
+    Query 参数：
+    - skip: 跳过前 N 条消息（默认 0）
+    - limit: 限制返回数量（默认 0 表示返回全部）
+    """
+    return get_messages(conversation_id, user, db, skip=skip, limit=limit)
 
 
 @router.put("/{conversation_id}", response_model=ConversationResponse)
