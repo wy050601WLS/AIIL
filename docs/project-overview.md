@@ -135,6 +135,17 @@ GitHub：https://github.com/wy050601WLS/AIIL.git
 | 趋势图 | 最近 30 天消息量柱状图（纯 CSS 实现） |
 | 热门标签 | 知识卡片标签 Top 10，带数量角标 |
 
+### 学习资料库
+
+| 功能 | 说明 |
+|------|------|
+| 资料收集 | 添加学习资料（标题/链接/描述/分类/类型/标签） |
+| 分类管理 | 按分类和类型筛选资料 |
+| 关键词搜索 | 按标题、描述、标签关键词过滤 |
+| AI 辅助搜索 | 自然语言提问，AI 分析资料库并推荐相关资料 |
+| 资料编辑 | 支持修改资料的所有字段 |
+| 外链跳转 | 有链接的资料可直接点击打开 |
+
 ### 用户系统
 
 | 功能 | 说明 |
@@ -334,6 +345,16 @@ users 1──n knowledge_cards
 }
 ```
 
+### 学习资料 `/resources`
+
+| 方法 | 路径 | 说明 | 认证 |
+|------|------|------|------|
+| POST | /resources | 创建资料 | ✓ |
+| GET | /resources | 资料列表（支持 category/type 过滤） | ✓ |
+| PUT | /resources/{id} | 更新资料 | ✓ |
+| DELETE | /resources/{id} | 删除资料 | ✓ |
+| POST | /resources/ask | AI 辅助搜索（自然语言提问） | ✓ |
+
 ---
 
 ## 六、前端路由
@@ -346,6 +367,7 @@ users 1──n knowledge_cards
 | /settings | Settings | ✓ | 个人设置 |
 | /cards | Cards | ✓ | 知识卡片 |
 | /dashboard | Dashboard | ✓ | 学习面板 |
+| /resources | Resources | ✓ | 学习资料库 |
 
 ---
 

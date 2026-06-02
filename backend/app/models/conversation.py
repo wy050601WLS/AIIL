@@ -1,7 +1,7 @@
-"""会话、消息、知识卡片和对话模板模型模块
+"""会话、消息、知识卡片、对话模板和学习资料模型模块
 
-定义核心业务模型：Conversation（会话）、Message（消息）、KnowledgeCard（知识卡片）、PromptTemplate（对话模板）。
-关系：User 1→N Conversation 1→N Message，User 1→N KnowledgeCard，User 1→N PromptTemplate。
+定义核心业务模型：Conversation、Message、KnowledgeCard、PromptTemplate、LearningResource。
+关系：User 1→N Conversation 1→N Message，User 1→N KnowledgeCard/PromptTemplate/LearningResource。
 """
 
 from datetime import datetime
@@ -83,4 +83,24 @@ class PromptTemplate(Base):
     content = Column(Text, nullable=False)                               # 模板 prompt 内容
     category = Column(String(50), nullable=True)                         # 分类标签（翻译/解释/练习等）
     is_builtin = Column(Boolean, default=False)                          # 是否为系统内置模板
+    created_at = Column(DateTime, default=datetime.now)
+
+
+class LearningResource(Base):
+    """学习资料表模型
+
+    用户收集的学习资料（链接、笔记、文章等），支持分类和标签管理。
+    AI 辅助搜索功能基于此表中的资料进行分析和推荐。
+    """
+
+    __tablename__ = "learning_resources"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    title = Column(String(200), nullable=False)                          # 资料标题
+    url = Column(String(500), nullable=True)                             # 可选的链接地址
+    description = Column(Text, nullable=True)                            # 资料描述/笔记
+    category = Column(String(50), nullable=True)                         # 分类（编程/数学/英语等）
+    resource_type = Column(String(20), nullable=True)                    # 类型（article/video/course/tool/book/other）
+    tags = Column(String(500), nullable=True)                            # 标签，逗号分隔
     created_at = Column(DateTime, default=datetime.now)

@@ -3,7 +3,7 @@
  *
  * 定义前端路由表和导航守卫：
  * - 公开路由：登录页、注册页
- * - 需认证路由：对话页、设置页、知识卡片、学习面板（meta.auth = true）
+ * - 需认证路由：对话页、设置页、知识卡片、学习面板、学习资料（meta.auth = true）
  * - 导航守卫：未登录时重定向到登录页，已登录时跳过登录/注册页
  */
 
@@ -19,6 +19,7 @@ const routes = [
   { path: '/settings', name: 'Settings', component: () => import('../views/Settings.vue'), meta: { auth: true } },
   { path: '/cards', name: 'Cards', component: () => import('../views/Cards.vue'), meta: { auth: true } },
   { path: '/dashboard', name: 'Dashboard', component: () => import('../views/Dashboard.vue'), meta: { auth: true } },
+  { path: '/resources', name: 'Resources', component: () => import('../views/Resources.vue'), meta: { auth: true } },
 ]
 
 const router = createRouter({

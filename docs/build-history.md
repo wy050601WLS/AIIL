@@ -576,3 +576,23 @@ AIIL/
 - ChatInput.vue 新增模板选择面板（el-popover），按分类分组展示，点击即填充输入框
 - 支持「保存为模板」：将当前输入框内容保存为自定义模板
 - Settings.vue 新增模板管理区域：查看/编辑/删除自定义模板
+
+---
+
+## 阶段二十四：学习资料库
+
+新增学习资料收集与 AI 辅助搜索功能，与 AI 对话互补——AI 对话是「问与答」，资料库是「收集与发现」。
+
+### W-1：后端资料 CRUD + AI 搜索
+- 新增 LearningResource 模型（learning_resources 表），支持标题/链接/描述/分类/类型/标签
+- 新增 /resources 路由：GET（列表，支持分类和类型过滤）、POST（创建）、PUT（更新）、DELETE（删除）
+- POST /resources/ask 端点：将用户问题和所有资料上下文发送给 AI，分析相关资料并推荐
+- 使用 httpx 非流式调用（stream=False）返回完整 AI 分析结果
+
+### W-2：前端资料库页面
+- 新增 api/resources.js 和 stores/resources.js
+- 新增 Resources.vue：卡片式资料列表，支持分类/类型筛选和关键词搜索
+- AI 搜索区：输入自然语言问题，AI 分析资料库并推荐相关资料
+- 新增/编辑对话框：el-form 表单，支持标题/链接/描述/分类/类型/标签
+- Sidebar.vue 新增「学习资料」导航入口（书本图标）
+- router/index.js 新增 /resources 路由

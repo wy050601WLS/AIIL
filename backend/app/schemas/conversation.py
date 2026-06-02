@@ -1,4 +1,4 @@
-"""会话、消息、卡片、模板和面板相关 Pydantic 模型
+"""会话、消息、卡片、模板、学习资料和面板相关 Pydantic 模型
 
 定义对话系统所有请求/响应的数据结构。
 """
@@ -109,6 +109,47 @@ class TemplateResponse(BaseModel):
     created_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+# ===== 学习资料相关 =====
+
+class ResourceCreate(BaseModel):
+    """创建学习资料请求体"""
+    title: str = Field(..., min_length=1, max_length=200)
+    url: str | None = Field(None, max_length=500)
+    description: str | None = None
+    category: str | None = Field(None, max_length=50)
+    resource_type: str | None = Field(None, max_length=20)
+    tags: str | None = None
+
+
+class ResourceUpdate(BaseModel):
+    """更新学习资料请求体（所有字段可选）"""
+    title: str | None = Field(None, min_length=1, max_length=200)
+    url: str | None = None
+    description: str | None = None
+    category: str | None = None
+    resource_type: str | None = None
+    tags: str | None = None
+
+
+class ResourceResponse(BaseModel):
+    """学习资料响应体"""
+    id: int
+    title: str
+    url: str | None = None
+    description: str | None = None
+    category: str | None = None
+    resource_type: str | None = None
+    tags: str | None = None
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class ResourceAskRequest(BaseModel):
+    """AI 辅助搜索请求体"""
+    question: str = Field(..., min_length=1)
 
 
 # ===== 学习面板相关 =====
