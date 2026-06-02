@@ -525,3 +525,225 @@ python -m pytest tests/ -q
 | 十三 | 知识卡片功能 |
 | 十四 | 学习进度面板 |
 | UI 优化 | 侧边栏图标化、下拉菜单重构、主题切换图标化、移除系统提示词 |
+
+---
+
+## 十一、核心实现模式
+
+### SSE 流式对话（最关键的数据流）
+
+```
+前端 ChatInput emit('send', {content, images[]})
+  → chatStore.sendMessage(content, images)
+    → 乐观更新：push 用户消息 + 空的 assistant 占位到 messages[]
+    → 创建 AbortController，loading=true
+    → api/chat.js: streamChat() 用原生 fetch（非 Axios）读取 SSE
+      → POST /api/chat，body: {conversation_id, content, model, regenerate, images}
+        → FastAPI: get_current_user 解析 JWT
+        → verify_conversation_owner 校验归属
+        → save_user_message 存用户消息到 DB
+        → load_history 构建完整历史（含 system prompt + 多模态格式）
+        → call_ai_api: httpx 流式调用 AI，收集所有 chunk
+        → 存 assistant 回复到 DB
+        → StreamingResponse 逐 chunk 回放给前端
+      → 前端 onToken: messages[idx].content += token（逐字追加）
+      → onDone: loading=false
+    → 中断：AbortController.abort() 触发 fetch signal
+```
+
+**关键细节：** 后端是"回放式 SSE"——先完整接收 AI 响应并存库，再逐 chunk 回放给前端。保证数据完整性，前端看到的是逐字效果。
+
+### 认证流程
+
+```
+登录 → POST /auth/login → 返回 {access_token: "jwt..."}
+  → 前端存 localStorage.setItem('token', token)
+  → Axios 拦截器自动附加 Authorization: Bearer {token}
+  → 后端 get_current_user: HTTPBearer → decode_access_token → 查 DB → 返回 User 对象
+  → 401 时前端拦截器自动清 token 并跳转 /login
+```
+
+### 图片处理管线
+
+```
+前端选择/粘贴图片 → FileReader.readAsDataURL → base64 data URL
+  → emit('send', {content, images: [base64, ...]})
+  → 后端 save_user_message: JSON.stringify(images) 存入 messages.images 列
+  → load_history: 含图片的消息转为 OpenAI 多模态格式：
+    [{"type":"text","text":"..."}, {"type":"image_url","image_url":{"url":"data:..."}}]
+  → 前端显示：ChatMessage 读取 msg.images，展示缩略图，点击 Teleport 全屏预览
+```
+
+### 状态管理模式
+
+所有 Store 使用 Pinia Composition API（`defineStore` + `ref` + `computed`）：
+
+| Store | 核心状态 | 关键操作 |
+|-------|---------|---------|
+| user | token, username, nickname, avatar, preferences | login, logout, loadProfile, saveProfile |
+| chat | conversations, currentId, messages, loading, models, currentModel | sendMessage（含 SSE）, regenerate, stopStreaming |
+| cards | cards, loading | loadCards, addCard, removeCard |
+| dashboard | stats, loading | loadStats |
+| theme | theme | toggle（深色/浅色，持久化到 localStorage） |
+
+### 测试模式
+
+- 测试数据库：SQLite 内存（`sqlite:///./test.db`），每个测试自动 create_all/drop_all
+- `conftest.py` 提供 `client`（未认证）和 `auth_client`（已登录）fixture
+- slowapi 在测试中通过 `enabled=False` 禁用
+- 测试中不调用真实 AI API，仅测试 CRUD 和认证
+
+---
+
+## 十二、技术债务与已知问题
+
+| 问题 | 位置 | 说明 |
+|------|------|------|
+| system_prompt 列残留 | conversations 表 | 已废弃但保留列，未做迁移删除 |
+| 回放式 SSE | ai_service.call_ai_api | 后端等 AI 全部返回再回放，非真流式。延迟 = AI 完整响应时间 |
+| 图片存 base64 | messages.images | 大图会撑爆数据库，应改为文件存储 + URL 引用 |
+| 无分页 | 会话列表、消息列表、卡片列表 | 全量加载，数据量大时性能差 |
+| 偏好存 JSON 文本 | users.preferences | 无 schema 验证，前端直接 JSON.parse |
+| init_db.sql 未同步 | backend/init_db.sql | 仍用旧表结构，缺少 knowledge_cards 表 |
+| HelloWorld.vue 残留 | frontend/src/components/ | Vite 脚手架组件，未删除 |
+| 无前端测试 | frontend/tests/ | 只有后端 24 个 pytest，前端无 Vitest |
+| AI 模型硬编码默认值 | config.py | AI_MODEL 默认值与 .env.example 不一致 |
+| conversations 无标题自动更新 | - | 新建时标题"新对话"，不会根据首条消息自动重命名 |
+
+---
+
+## 十三、扩展方向
+
+### 高价值（核心学习场景）
+
+| 方向 | 说明 | 改动范围 |
+|------|------|---------|
+| **对话内搜索** | 搜索当前会话的消息内容 | 前端 Chat.vue |
+| **知识卡片编辑** | 卡片内容修改 + 标签编辑 | 后端 PUT /cards/{id} + 前端 Cards.vue |
+| **卡片复习模式** | 间隔复习（类 Anki），按遗忘曲线推送 | 新表 reviews + 新路由 + 前端复习页 |
+| **对话标题自动更新** | 首次 AI 回复后用摘要更新标题 | 后端 chat.py |
+| **批量导出** | 导出所有知识卡片为 Markdown/CSV | 后端新端点 + 前端按钮 |
+
+### 中等价值（体验提升）
+
+| 方向 | 说明 | 改动范围 |
+|------|------|---------|
+| **消息分页** | 长会话消息分页加载，避免一次全量 | 后端分页参数 + 前端无限滚动 |
+| **图片文件存储** | base64 改为上传到服务器/对象存储 | 后端新上传端点 + 迁移 |
+| **对话模板** | 预设 prompt 模板（翻译、解释、练习等） | 新表 + 前端模板选择器 |
+| **多语言支持** | i18n，界面和 AI 提示词切换语言 | vue-i18n + 配置化 prompt |
+| **消息引用/回复** | 引用某条消息进行追问 | messages 表加 parent_id + 前端引用 UI |
+
+### 低价值（锦上添花）
+
+| 方向 | 说明 |
+|------|------|
+| WebSocket 替代 SSE | 支持双向通信，但当前场景不需要 |
+| 用户头像上传 | 替代 emoji 头像，需要文件存储 |
+| 对话分享 | 生成公开链接分享对话记录 |
+| 无障碍优化 | ARIA 标签、键盘焦点指示、屏幕阅读器支持 |
+| 前端单元测试 | Vitest 测试组件和 store |
+
+---
+
+## 十四、改进建议（按优先级）
+
+### P0 — 应该做
+
+1. **修复 init_db.sql** — 同步 knowledge_cards 表结构，否则 Docker 部署会缺表
+2. **删除 HelloWorld.vue** — 清理无用文件
+3. **AI 模型默认值统一** — config.py 和 .env.example 的 AI_MODEL 保持一致
+
+### P1 — 建议做
+
+4. **真流式 SSE** — 后端用 `async for` 逐 chunk 转发给前端，而非先收集再回放。降低首 token 延迟
+5. **消息分页** — `GET /conversations/{id}/messages?offset=0&limit=50`，前端无限滚动
+6. **知识卡片编辑** — `PUT /cards/{id}` 支持修改内容和标签
+7. **对话标题自动更新** — 首次 AI 回复后用前 20 字更新标题
+
+### P2 — 可以做
+
+8. **图片存储改为文件** — 上传到 `backend/uploads/`，messages.images 存 URL 列表
+9. **卡片复习功能** — 新表 `reviews`（card_id, next_review, interval, ease），间隔重复算法
+10. **前端测试** — Vitest 测试 store 和关键组件
+
+---
+
+## 十五、开发约定
+
+### 后端
+
+- **分层：Router → Service → Model**，Router 只做请求解析和响应，Service 做业务逻辑
+- **认证：** 所有需登录的端点用 `Depends(get_current_user)`
+- **归属校验：** 涉及用户数据的操作必须校验 `resource.user_id == user.id`
+- **错误码：** 404 资源不存在，403 无权访问，422 参数验证失败
+- **测试：** 新增功能必须有对应 pytest 测试
+
+### 前端
+
+- **状态管理：** 全局状态用 Pinia store，组件内用 ref/computed
+- **API 调用：** 非流式用 Axios（自动 token/401），流式用原生 fetch
+- **组件通信：** 父子 props/emits，跨组件用 store
+- **主题：** 用 CSS 变量（`var(--xxx)`），不要硬编码颜色
+- **响应式：** 768px 断点，移动端侧边栏抽屉式
+
+### Git
+
+- 提交信息格式：`type: 中文描述`（feat/fix/refactor/docs）
+- 每次功能完成后更新 `docs/build-history.md`
+- 单次提交只做一件事
+
+---
+
+## 十六、环境变量
+
+| 变量 | 默认值 | 说明 |
+|------|--------|------|
+| DB_HOST | localhost | MySQL 主机 |
+| DB_PORT | 3306 | MySQL 端口 |
+| DB_USER | root | MySQL 用户 |
+| DB_PASSWORD | root | MySQL 密码 |
+| DB_NAME | ai | 数据库名 |
+| JWT_SECRET_KEY | aiil-secret-key | JWT 签名密钥 |
+| JWT_ALGORITHM | HS256 | JWT 算法 |
+| JWT_EXPIRE_HOURS | 24 | Token 有效期（小时） |
+| AI_API_KEY | - | MiMo API 密钥 |
+| AI_BASE_URL | https://token-plan-cn.xiaomimimo.com | AI 接口地址 |
+| AI_MODEL | mimo-v2.5-pro | 默认 AI 模型 |
+| CORS_ORIGINS | http://localhost:5173 | 允许的跨域来源 |
+| HOST | 0.0.0.0 | 服务监听地址 |
+| PORT | 8000 | 服务监听端口 |
+
+---
+
+## 十七、快速启动
+
+### 本地开发
+
+```bash
+# 后端
+cd backend
+cp ../.env.example .env    # 填入 AI_API_KEY
+pip install -r requirements.txt
+alembic upgrade head
+python -m uvicorn app.main:app --reload
+
+# 前端
+cd frontend
+npm install
+npm run dev                # http://localhost:5173
+```
+
+### Docker 部署
+
+```bash
+cp .env.example .env       # 填入 AI_API_KEY
+docker-compose up -d       # 前端 :80, 后端 :8000, MySQL :3306
+```
+
+### 运行测试
+
+```bash
+cd backend
+python -m pytest tests/ -q
+```
