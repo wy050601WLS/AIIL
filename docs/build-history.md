@@ -491,3 +491,27 @@ AIIL/
 - 组件层：components/ — 3 个 Vue 组件头注释（Props/Events 说明）、31 个函数注释
 - 视图层：views/ — 6 个页面组件头注释、22 个函数注释
 - 其他：router/index.js 路由表注释、main.js 入口注释
+
+---
+
+## 阶段十九：P0 技术债务修复 + 对话标题自动更新
+
+清理已知技术债务，提升项目健壮性。
+
+### R-1：修复 init_db.sql
+- 同步完整表结构：users 表补全 nickname/avatar/preferences 列
+- conversations 表补全 pinned/archived/system_prompt 列
+- messages 表补全 images 列
+- 新增 knowledge_cards 表定义
+
+### R-2：清理残留文件
+- 删除 HelloWorld.vue（Vite 脚手架残留组件）
+
+### R-3：统一 AI 模型默认值
+- config.py 的 AI_MODEL 默认值从 claude-sonnet-4-20250514 改为 mimo-v2.5-pro
+- 与 .env.example 保持一致
+
+### R-4：对话标题自动更新
+- 后端：chat 端点中，若会话标题仍为「新对话」，用用户消息前 30 字自动更新
+- 前端：chat store sendMessage 中同步更新本地会话标题
+- 支持多行文本（换行替换为空格）和纯图片对话（回退为「图片对话」）

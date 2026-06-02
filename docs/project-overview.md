@@ -604,11 +604,16 @@ python -m pytest tests/ -q
 | 图片存 base64 | messages.images | 大图会撑爆数据库，应改为文件存储 + URL 引用 |
 | 无分页 | 会话列表、消息列表、卡片列表 | 全量加载，数据量大时性能差 |
 | 偏好存 JSON 文本 | users.preferences | 无 schema 验证，前端直接 JSON.parse |
-| init_db.sql 未同步 | backend/init_db.sql | 仍用旧表结构，缺少 knowledge_cards 表 |
-| HelloWorld.vue 残留 | frontend/src/components/ | Vite 脚手架组件，未删除 |
-| 无前端测试 | frontend/tests/ | 只有后端 24 个 pytest，前端无 Vitest |
-| AI 模型硬编码默认值 | config.py | AI_MODEL 默认值与 .env.example 不一致 |
-| conversations 无标题自动更新 | - | 新建时标题"新对话"，不会根据首条消息自动重命名 |
+| 无前端测试 | frontend/tests/ | 只有后端 23 个 pytest，前端无 Vitest |
+
+### 已修复
+
+| 问题 | 修复方式 |
+|------|---------|
+| ~~init_db.sql 未同步~~ | 同步完整表结构，包含 knowledge_cards 表 |
+| ~~HelloWorld.vue 残留~~ | 已删除 |
+| ~~AI 模型默认值不一致~~ | 统一为 mimo-v2.5-pro |
+| ~~对话标题无自动更新~~ | 首条消息后自动用消息前 30 字更新标题 |
 
 ---
 
@@ -648,18 +653,18 @@ python -m pytest tests/ -q
 
 ## 十四、改进建议（按优先级）
 
-### P0 — 应该做
+### P0 — 应该做（已完成）
 
-1. **修复 init_db.sql** — 同步 knowledge_cards 表结构，否则 Docker 部署会缺表
-2. **删除 HelloWorld.vue** — 清理无用文件
-3. **AI 模型默认值统一** — config.py 和 .env.example 的 AI_MODEL 保持一致
+1. ~~**修复 init_db.sql**~~ — 已同步完整表结构
+2. ~~**删除 HelloWorld.vue**~~ — 已删除
+3. ~~**AI 模型默认值统一**~~ — 已统一为 mimo-v2.5-pro
 
 ### P1 — 建议做
 
 4. **真流式 SSE** — 后端用 `async for` 逐 chunk 转发给前端，而非先收集再回放。降低首 token 延迟
 5. **消息分页** — `GET /conversations/{id}/messages?offset=0&limit=50`，前端无限滚动
 6. **知识卡片编辑** — `PUT /cards/{id}` 支持修改内容和标签
-7. **对话标题自动更新** — 首次 AI 回复后用前 20 字更新标题
+7. ~~**对话标题自动更新**~~ — 已实现，用户发送首条消息后自动用消息前 30 字更新标题
 
 ### P2 — 可以做
 
