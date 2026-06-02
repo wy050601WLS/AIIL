@@ -7,232 +7,139 @@
 | 项目名称 | AIIL（AI 智慧学习系统） |
 | 技术栈 | 前端 Vue3 + Vite + Pinia + Element Plus，后端 Python FastAPI，AI 小米 MiMo |
 | 数据库 | MySQL，数据库名 `ai`，账号 `root` |
+| 迁移工具 | Alembic |
+
+## 项目结构
+
+```
+AIIL/
+├── backend/
+│   ├── app/
+│   │   ├── models/          # SQLAlchemy ORM 模型
+│   │   ├── schemas/         # Pydantic 请求/响应模型
+│   │   ├── routers/         # API 路由（auth / history / chat）
+│   │   ├── services/        # 业务逻辑层
+│   │   ├── utils/           # 工具（JWT / 密码哈希）
+│   │   ├── config.py        # 统一配置
+│   │   ├── database.py      # 数据库连接
+│   │   └── main.py          # FastAPI 入口
+│   ├── alembic/             # 数据库迁移
+│   ├── tests/               # pytest 单元测试
+│   ├── Dockerfile
+│   ├── requirements.txt
+│   └── alembic.ini
+├── frontend/
+│   ├── src/
+│   │   ├── api/             # Axios 请求封装
+│   │   ├── components/      # ChatMessage / ChatInput / Sidebar / SystemPromptDialog
+│   │   ├── router/          # Vue Router 路由配置
+│   │   ├── stores/          # Pinia 状态管理（user / chat / theme）
+│   │   ├── views/           # Login / Register / Chat / Settings
+│   │   ├── style.css        # 全局主题变量
+│   │   └── main.js          # 应用入口
+│   └── Dockerfile
+├── docker-compose.yml
+└── docs/
+    ├── build-history.md     # 本文档
+    └── project-plan.md      # 项目计划
+```
+
+## 最终功能清单
+
+| 类别 | 功能 |
+|------|------|
+| 用户认证 | 注册、登录、JWT 鉴权、修改密码 |
+| 用户资料 | 头像选择、昵称编辑、偏好设置（字体大小 / 消息密度 / 默认模型） |
+| 对话管理 | 新建、重命名、删除、置顶、归档、搜索、导出 Markdown |
+| AI 对话 | SSE 流式输出、Markdown 渲染 + 代码高亮、重新生成、多模型切换 |
+| 消息操作 | 编辑、删除、复制（渲染文本）、时间戳 |
+| 系统提示词 | 每个会话可独立设置，内置学习助手默认提示词 |
+| UI 体验 | 深色 / 浅色主题、移动端响应式、消息密度调节、自动滚动、输入框自适应 |
+| 快捷键 | Ctrl+N 新建、Ctrl+K 搜索、Ctrl+Shift+E 导出、Escape 关闭侧边栏 |
+| 工程化 | Docker 部署、Alembic 数据库迁移、GitHub Actions CI、pytest 单元测试 |
 
 ---
 
-## A-1：克隆仓库并创建 .gitignore
+## 阶段一：项目初始化（A-1 ~ A-3）
 
-| 维度 | 内容 |
-|------|------|
-| 执行工作 | 克隆远程仓库，创建 .gitignore 文件 |
-| 实现手段 | git clone + 手写忽略规则 |
-| 新增功能 | 项目初始化，排除 `__pycache__`、`node_modules`、`.env`、IDE 配置等不需版本控制的文件 |
-| 移除功能 | 无 |
-| 调整功能 | 无 |
+从零搭建前后端项目骨架。
 
-## A-2：创建后端目录结构与依赖配置
+### A-1：克隆仓库并创建 .gitignore
+- 克隆远程仓库，创建 .gitignore 排除 `__pycache__`、`node_modules`、`.env` 等
 
-| 维度 | 内容 |
-|------|------|
-| 执行工作 | 创建 `backend/app/` 目录及子目录，创建 `requirements.txt` |
-| 实现手段 | mkdir + 手写 requirements.txt |
-| 新增功能 | 后端项目骨架，依赖：fastapi, uvicorn, sqlalchemy, pymysql, python-jose, bcrypt, python-dotenv, httpx |
-| 移除功能 | 无 |
-| 调整功能 | 原 passlib[bcrypt] 替换为 bcrypt>=4.0.0（兼容性问题） |
+### A-2：创建后端目录结构与依赖配置
+- 创建 `backend/app/` 目录及子目录，编写 requirements.txt
+- 依赖：fastapi, uvicorn, sqlalchemy, pymysql, python-jose, bcrypt, python-dotenv, httpx
 
-## A-3：创建前端项目
-
-| 维度 | 内容 |
-|------|------|
-| 执行工作 | 使用 Vite 创建 Vue3 项目到 `frontend/` 目录 |
-| 实现手段 | npm create vue@latest |
-| 新增功能 | 前端项目脚手架，含 Vite 开发服务器 |
-| 移除功能 | 无 |
-| 调整功能 | 无 |
-
-## B-1：创建数据库表结构
-
-| 维度 | 内容 |
-|------|------|
-| 执行工作 | 编写 ORM 模型定义 users、conversations、messages 三张表 |
-| 实现手段 | SQLAlchemy declarative_base，含主键、外键、索引 |
-| 新增功能 | users（用户表）、conversations（会话表）、messages（消息表） |
-| 移除功能 | 移除旧表 topic, knowledge_card, chat_session, topic_relation（旧方案遗留） |
-| 调整功能 | 技术栈从 React+Node.js 变更为 FastAPI+Vue3，数据模型重新设计 |
-
-## C-1：配置模块 config.py + 数据库模块 database.py
-
-| 维度 | 内容 |
-|------|------|
-| 执行工作 | 创建 `backend/app/config.py` 和 `backend/app/database.py` |
-| 实现手段 | 自定义 Settings 类读取 .env，SQLAlchemy create_engine + sessionmaker |
-| 新增功能 | 统一配置管理（数据库、JWT、AI 模型、服务器），数据库连接与 get_db 依赖注入 |
-| 移除功能 | 无 |
-| 调整功能 | 未使用 pydantic-settings，改用自定义类 + os.getenv（简化依赖） |
-
-## C-2：ORM 模型 user.py + conversation.py
-
-| 维度 | 内容 |
-|------|------|
-| 执行工作 | 创建 `backend/app/models/user.py` 和 `backend/app/models/conversation.py` |
-| 实现手段 | SQLAlchemy Column 定义，relationship 关联 |
-| 新增功能 | User、Conversation、Message 三个 ORM 模型，含级联删除 |
-| 移除功能 | 无 |
-| 调整功能 | 无 |
-
-## C-3：Pydantic Schema user.py + conversation.py
-
-| 维度 | 内容 |
-|------|------|
-| 执行工作 | 创建 `backend/app/schemas/user.py` 和 `backend/app/schemas/conversation.py` |
-| 实现手段 | Pydantic BaseModel 定义请求/响应模型 |
-| 新增功能 | UserCreate, UserLogin, UserResponse, Token, ConversationCreate, ConversationResponse, MessageResponse, ChatRequest |
-| 移除功能 | 无 |
-| 调整功能 | 无 |
-
-## C-4：安全工具 security.py
-
-| 维度 | 内容 |
-|------|------|
-| 执行工作 | 创建 `backend/app/utils/security.py` |
-| 实现手段 | bcrypt 密码哈希，python-jose JWT 编解码，HTTPBearer 认证 |
-| 新增功能 | hash_password, verify_password, create_access_token, decode_access_token, get_current_user |
-| 移除功能 | 无 |
-| 调整功能 | 原 passlib 替换为 bcrypt 直接调用 |
-
-## C-5：认证路由 auth.py + 认证服务 auth_service.py
-
-| 维度 | 内容 |
-|------|------|
-| 执行工作 | 创建 `backend/app/routers/auth.py` 和 `backend/app/services/auth_service.py` |
-| 实现手段 | FastAPI APIRouter，POST /register 和 POST /login 端点，service 层封装业务逻辑 |
-| 新增功能 | 用户注册（返回用户信息）、用户登录（返回 JWT token） |
-| 移除功能 | 无 |
-| 调整功能 | 无 |
-
-## C-6：会话管理路由 history.py + 对话服务 chat_service.py
-
-| 维度 | 内容 |
-|------|------|
-| 执行工作 | 创建 `backend/app/routers/history.py` 和 `backend/app/services/chat_service.py` |
-| 实现手段 | FastAPI APIRouter，service 层封装业务逻辑，get_current_user 依赖注入鉴权 |
-| 新增功能 | POST /conversations（创建会话）、GET /conversations（会话列表）、GET /conversations/{id}/messages（消息列表） |
-| 移除功能 | 无 |
-| 调整功能 | 无 |
-
-## C-7：AI 对话路由 chat.py + AI 服务 ai_service.py
-
-| 维度 | 内容 |
-|------|------|
-| 执行工作 | 创建 `backend/app/routers/chat.py` 和 `backend/app/services/ai_service.py` |
-| 实现手段 | httpx 流式调用 MiMo API（OpenAI 兼容格式），SSE StreamingResponse，用户消息和助手回复持久化到数据库 |
-| 新增功能 | POST /chat 端点，流式 AI 对话，自动保存对话历史，会话所有权校验 |
-| 移除功能 | 无 |
-| 调整功能 | 无 |
-
-## C-8：应用入口 main.py + 环境变量 .env
-
-| 维度 | 内容 |
-|------|------|
-| 执行工作 | 创建 `backend/app/main.py`，确认 `.env` 配置完整 |
-| 实现手段 | FastAPI 实例 + CORSMiddleware + 路由挂载，启动时自动建表 |
-| 新增功能 | 后端服务入口，CORS 跨域支持，自动注册 auth/history/chat 三组路由 |
-| 移除功能 | 无 |
-| 调整功能 | 无 |
-
-## D-1：API 请求封装 + 路由配置 + 状态管理
-
-| 维度 | 内容 |
-|------|------|
-| 执行工作 | 创建 `api/index.js`、`api/auth.js`、`api/chat.js`、`router/index.js`、`stores/user.js`、`stores/chat.js` |
-| 实现手段 | Axios 实例 + 请求/响应拦截器，Vue Router 路由守卫，Pinia 组合式 store |
-| 新增功能 | API 统一请求封装（自动带 token、401 跳转），路由配置（登录/注册/对话页），用户状态管理（登录/注册/登出），对话状态管理（会话列表/消息/SSE 流式） |
-| 移除功能 | 无 |
-| 调整功能 | 无 |
-
-## D-2：全局样式 + 入口文件
-
-| 维度 | 内容 |
-|------|------|
-| 执行工作 | 重写 `style.css`、`main.js`、`App.vue` |
-| 实现手段 | CSS 变量定义科技深色主题色板，main.js 注册 Element Plus（含深色模式）/Pinia/Router，App.vue 使用 router-view |
-| 新增功能 | 科技深色 UI 主题（深蓝紫色调），Element Plus 深色样式覆盖，全局滚动条美化 |
-| 移除功能 | 移除 Vite 默认模板样式（HelloWorld 组件引用） |
-| 调整功能 | style.css 从 Vite 默认样式完全重写为项目深色主题 |
-
-## D-3：登录页 Login.vue + 注册页 Register.vue
-
-| 维度 | 内容 |
-|------|------|
-| 执行工作 | 创建 `views/Login.vue` 和 `views/Register.vue` |
-| 实现手段 | Element Plus 表单组件，居中卡片布局，表单验证（用户名/密码长度、确认密码一致性） |
-| 新增功能 | 登录页面（用户名+密码，回车提交）、注册页面（含确认密码校验），登录/注册页互跳链接 |
-| 移除功能 | 无 |
-| 调整功能 | 无 |
-
-## D-4：对话主页 Chat.vue + 侧边栏 Sidebar.vue
-
-| 维度 | 内容 |
-|------|------|
-| 执行工作 | 创建 `views/Chat.vue` 和 `components/Sidebar.vue` |
-| 实现手段 | Flex 左右布局，侧边栏会话列表 + 右侧消息区域，onMounted 加载会话列表 |
-| 新增功能 | 对话主页面框架，侧边栏（会话列表、新建对话、当前用户、退出登录），消息区域（欢迎页+消息列表） |
-| 移除功能 | 无 |
-| 调整功能 | 无 |
-
-## D-5：消息组件 ChatMessage.vue + 输入组件 ChatInput.vue
-
-| 维度 | 内容 |
-|------|------|
-| 执行工作 | 创建 `components/ChatMessage.vue` 和 `components/ChatInput.vue` |
-| 实现手段 | 消息气泡（用户右侧蓝色/AI 左侧深色），textarea 自适应高度，Enter 发送 + Shift+Enter 换行 |
-| 新增功能 | 消息气泡组件（头像+气泡，用户/AI 双方样式），输入组件（多行输入、发送按钮、加载状态） |
-| 移除功能 | 无 |
-| 调整功能 | 无 |
-
-## D-6：SSE 流式对话集成
-
-| 维度 | 内容 |
-|------|------|
-| 执行工作 | 确认 SSE 流式链路完整性，无需额外代码 |
-| 实现手段 | fetch + ReadableStream 读取 SSE 数据流，onToken 回调逐 token 更新消息，Vue 响应式自动重渲染 |
-| 新增功能 | AI 回复逐字显示（打字效果），完整链路：Chat.vue → chatStore.sendMessage → streamChat → onToken → ChatMessage.vue |
-| 移除功能 | 无 |
-| 调整功能 | D-1 的 api/chat.js 和 stores/chat.js 已包含完整 SSE 实现，本任务为验证确认 |
-
-## E-1：前后端联调测试
-
-| 维度 | 内容 |
-|------|------|
-| 执行工作 | 启动后端服务，测试所有 API 端点，修复 AI 模型配置 |
-| 实现手段 | curl 逐一测试各端点，排查 MiMo API 模型名称和请求格式 |
-| 新增功能 | 无 |
-| 移除功能 | 移除 Anthropic SDK 依赖（ai_service.py 改用 httpx 直接调用 OpenAI 兼容格式） |
-| 调整功能 | ① AI 模型从 `claude-sonnet-4-20250514` 改为 `mimo-v2.5-pro`（MiMo 平台实际可用模型）；② AI_BASE_URL 从 `/anthropic` 改为根路径（OpenAI 兼容端点）；③ ai_service.py 从 Anthropic SDK 改为 httpx + OpenAI SSE 格式 |
-
-## CI-1：GitHub Actions CI/CD 工作流
-
-| 维度 | 内容 |
-|------|------|
-| 执行工作 | 创建 `.github/workflows/ci.yml` |
-| 实现手段 | GitHub Actions，push/PR 触发，并行执行 backend 和 frontend 两个 job |
-| 新增功能 | 后端检查（Python 依赖安装 + 模块导入验证），前端检查（npm ci + 生产构建） |
-| 移除功能 | 无 |
-| 调整功能 | 无 |
-
-## E-2：Git 提交与推送
-
-| 维度 | 内容 |
-|------|------|
-| 执行工作 | 将所有代码提交到 Git 仓库并推送到远程 |
-| 实现手段 | git add + git commit + git push |
-| 新增功能 | 代码版本管理，2 个 commit（主功能 + CI 调整） |
-| 移除功能 | CI 工作流文件因 GitHub token 缺少 workflow 权限暂时从 Git 移除（文件保留在本地） |
-| 调整功能 | 无 |
-
-## E-3：历程文档归档
-
-| 维度 | 内容 |
-|------|------|
-| 执行工作 | 完善 docs/build-history.md，修正不准确记录，补全所有任务变更 |
-| 实现手段 | 逐项核对实际实现与文档记录的一致性 |
-| 新增功能 | 无 |
-| 移除功能 | 无 |
-| 调整功能 | 修正 A-2 依赖列表（anthropic→httpx），修正 C-7 实现手段（Anthropic SDK→httpx），补全 E-2/E-3 记录 |
+### A-3：创建前端项目
+- `npm create vue@latest` 创建 Vue3 + Vite 项目到 `frontend/`
 
 ---
 
-### E-1 测试结果
+## 阶段二：数据库与后端核心（B-1 ~ C-8）
+
+设计数据模型，搭建后端服务的完整链路。
+
+### B-1：创建数据库表结构
+- ORM 模型定义 users / conversations / messages 三张表
+- 移除旧方案遗留表（topic, knowledge_card 等），技术栈从 React+Node.js 变更为 FastAPI+Vue3
+
+### C-1：配置模块 + 数据库模块
+- `config.py` 自定义 Settings 类读取 .env，`database.py` SQLAlchemy 连接与 get_db 依赖注入
+
+### C-2：ORM 模型
+- User、Conversation、Message 三个 ORM 模型，含级联删除
+
+### C-3：Pydantic Schema
+- UserCreate, UserLogin, UserResponse, Token, ConversationCreate, ChatRequest 等请求/响应模型
+
+### C-4：安全工具
+- bcrypt 密码哈希，python-jose JWT 编解码，HTTPBearer 认证
+
+### C-5：认证路由 + 服务
+- POST /register、POST /login 端点，service 层封装业务逻辑
+
+### C-6：会话管理路由 + 服务
+- POST /conversations、GET /conversations、GET /conversations/{id}/messages
+
+### C-7：AI 对话路由 + 服务
+- httpx 流式调用 MiMo API（OpenAI 兼容格式），SSE StreamingResponse，消息持久化
+
+### C-8：应用入口
+- FastAPI 实例 + CORSMiddleware + 路由挂载
+
+---
+
+## 阶段三：前端开发（D-1 ~ D-6）
+
+实现完整的前端界面和交互。
+
+### D-1：API 封装 + 路由 + 状态管理
+- Axios 请求拦截器（自动带 token、401 跳转），Vue Router 路由守卫，Pinia stores
+
+### D-2：全局样式 + 入口文件
+- CSS 变量定义科技深色主题，main.js 注册 Element Plus / Pinia / Router
+
+### D-3：登录页 + 注册页
+- Element Plus 表单组件，居中卡片布局，表单验证
+
+### D-4：对话主页 + 侧边栏
+- Flex 左右布局，侧边栏会话列表 + 右侧消息区域
+
+### D-5：消息组件 + 输入组件
+- 消息气泡（用户右侧 / AI 左侧），textarea 自适应高度，Enter 发送
+
+### D-6：SSE 流式对话集成
+- fetch + ReadableStream 读取 SSE，onToken 回调逐 token 更新消息
+
+---
+
+## 阶段四：联调与部署（E-1 ~ E-3, CI-1）
+
+前后端联调、Git 提交、CI 配置。
+
+### E-1：前后端联调测试
+- curl 测试所有端点，修复 AI 模型配置（从 Anthropic SDK 改为 httpx + OpenAI 格式）
 
 | 端点 | 结果 |
 |------|------|
@@ -244,358 +151,165 @@
 | GET /conversations/{id}/messages | 正常 |
 | POST /chat | 正常，SSE 流式输出 AI 回复 |
 
----
+### CI-1：GitHub Actions CI/CD
+- push/PR 触发，后端依赖安装 + 导入验证，前端 npm ci + 生产构建
 
-## 项目完成
+### E-2：Git 提交与推送
+- 全部代码提交推送到远程
 
-所有任务（A-1 ~ E-3 + CI-1）已完成。系统包含：
-
-- **后端**：FastAPI + MySQL + JWT 认证 + MiMo AI 流式对话
-- **前端**：Vue3 + Element Plus 科技深色主题 + SSE 流式渲染
-- **CI/CD**：GitHub Actions 工作流（待推送）
-- **文档**：项目计划 + 全周期构建历程
-
-### 功能扩展记录
-
-| 阶段 | 内容 | 任务数 |
-|------|------|--------|
-| 第一轮扩展（F-1 ~ F-11） | 密码修改、主题切换、Markdown 渲染、会话重命名/删除、消息复制/重新生成、对话导出+模型切换、移动端适配、会话搜索、Docker 部署、单元测试、CI 更新 | 11 |
-| 第二轮扩展（F-12 ~ F-20） | 用户头像+昵称、偏好设置、消息时间戳、消息编辑/删除、会话置顶+归档、系统提示词、键盘快捷键、默认学习提示词、数据库迁移 | 9 |
-| 第三轮优化（G-1 ~ G-6） | 事件处理器修复、自动滚动、编辑弹窗、输入框自适应、重新生成修复、marked 初始化优化 | 6 |
-| 第四轮优化（G-7 ~ G-10） | 表单校验提示、设置页加载时序、默认模型偏好、消息密度应用 | 4 |
-| 第五轮优化（H-1 ~ H-12） | 校验拦截、移动端操作、路由导航、错误处理、归档搜索、marked 去重、归档计数、复制渲染文本 | 8 |
-| 工程化（I-1） | Alembic 数据库迁移 | 1 |
+### E-3：历程文档归档
+- 修正不准确记录（A-2 依赖列表、C-7 实现手段），补全所有任务变更
 
 ---
 
-## 功能扩展阶段
+## 阶段五：第一轮功能扩展（F-1 ~ F-11）
+
+在 MVP 基础上增加用户管理和交互体验功能。
 
 ### F-1：用户设置（修改密码）
+- 后端 PUT /auth/password，前端 Settings.vue 页面，修改成功后自动退出登录
 
-| 维度 | 内容 |
-|------|------|
-| 执行工作 | 后端添加 PUT /auth/password 端点，前端新增 Settings.vue 页面 |
-| 实现手段 | FastAPI 端点 + auth_service.change_password，Vue3 表单 + Element Plus 验证 |
-| 新增功能 | 修改密码页面，旧密码验证 + 新密码设置，修改成功后自动退出登录 |
-
-### F-2：深色/浅色主题切换
-
-| 维度 | 内容 |
-|------|------|
-| 执行工作 | 添加 .light CSS 类覆盖主题变量，创建 theme store |
-| 实现手段 | CSS 变量 + Pinia store + localStorage 持久化 |
-| 新增功能 | 浅色主题配色，侧边栏主题切换按钮，刷新后保持选择 |
+### F-2：深色 / 浅色主题切换
+- CSS 变量 + `.light` 类覆盖，Pinia theme store + localStorage 持久化
 
 ### F-3：Markdown 渲染 + 代码高亮
+- marked 解析 Markdown，highlight.js 语法高亮，AI 消息支持标题、列表、表格、代码块
 
-| 维度 | 内容 |
-|------|------|
-| 执行工作 | 安装 marked + highlight.js，重写 ChatMessage 组件 |
-| 实现手段 | marked 解析 Markdown，highlight.js 语法高亮，v-html 渲染 |
-| 新增功能 | AI 消息支持标题、列表、表格、引用、代码块等 Markdown 格式 |
+### F-4：会话重命名 / 删除
+- 后端 PUT/DELETE /conversations/{id}，hover 显示操作按钮，内联编辑标题
 
-### F-4：会话重命名/删除
-
-| 维度 | 内容 |
-|------|------|
-| 执行工作 | 后端添加 PUT/DELETE /conversations/{id}，前端侧边栏添加操作按钮 |
-| 实现手段 | FastAPI 端点 + chat_service，hover 显示操作按钮，内联编辑标题 |
-| 新增功能 | 会话重命名（内联编辑），会话删除（确认对话框） |
-
-### F-5：消息复制/重新生成
-
-| 维度 | 内容 |
-|------|------|
-| 执行工作 | ChatMessage 组件添加操作按钮，chat store 添加 regenerate 方法 |
-| 实现手段 | navigator.clipboard API 复制，重新发送最后一条用户消息 |
-| 新增功能 | 消息复制到剪贴板，最后一条 AI 消息支持重新生成 |
+### F-5：消息复制 / 重新生成
+- navigator.clipboard 复制，chat store regenerate 方法重新发送最后一条用户消息
 
 ### F-6：对话导出 + 多模型切换
-
-| 维度 | 内容 |
-|------|------|
-| 执行工作 | 后端添加 GET /models 和 GET /conversations/{id}/export，前端添加模型选择器和导出按钮 |
-| 实现手段 | FastAPI PlainTextResponse 导出 Markdown，前端 Blob 下载 |
-| 新增功能 | 模型选择器（支持动态模型列表），导出对话为 Markdown 文件 |
+- GET /models 和 GET /conversations/{id}/export，前端模型选择器 + Markdown 导出
 
 ### F-7：移动端响应式优化
-
-| 维度 | 内容 |
-|------|------|
-| 执行工作 | 侧边栏改为抽屉式，聊天区域和输入组件适配小屏 |
-| 实现手段 | CSS 媒体查询 + 汉堡菜单按钮 + overlay 遮罩 |
-| 新增功能 | 移动端侧边栏抽屉，响应式布局适配 375px+ |
+- 侧边栏改为抽屉式，CSS 媒体查询适配 375px+
 
 ### F-8：侧边栏会话搜索
-
-| 维度 | 内容 |
-|------|------|
-| 执行工作 | 侧边栏添加搜索输入框 |
-| 实现手段 | computed 属性实时过滤会话列表 |
-| 新增功能 | 按标题关键词搜索会话 |
+- computed 属性实时按标题关键词过滤会话列表
 
 ### F-9：Docker 容器化部署
-
-| 维度 | 内容 |
-|------|------|
-| 执行工作 | 创建 backend/Dockerfile、frontend/Dockerfile、docker-compose.yml |
-| 实现手段 | 多阶段构建（Node 构建 + Nginx 服务），docker-compose 编排三个服务 |
-| 新增功能 | 一键 docker-compose up 启动完整系统（MySQL + Backend + Frontend） |
+- 多阶段构建 Dockerfile，docker-compose 编排 MySQL + Backend + Frontend
 
 ### F-10：后端单元测试
-
-| 维度 | 内容 |
-|------|------|
-| 执行工作 | 创建 backend/tests/ 目录，编写认证和会话 API 测试 |
-| 实现手段 | pytest + FastAPI TestClient + SQLite 内存数据库 |
-| 新增功能 | 8 个测试用例覆盖用户注册/登录/会话 CRUD |
+- pytest + FastAPI TestClient + SQLite 内存数据库，8 个测试用例
 
 ### F-11：CI/CD 工作流更新
-
-| 维度 | 内容 |
-|------|------|
-| 执行工作 | 更新 ci.yml 添加测试步骤 |
-| 实现手段 | GitHub Actions，push/PR 触发后端测试 |
-| 新增功能 | CI 流程包含后端单元测试 |
+- CI 流程添加后端单元测试步骤
 
 ---
 
-## 第二轮功能扩展（用户功能 + 对话体验）
+## 阶段六：第二轮功能扩展（F-12 ~ F-20）
+
+增强用户个性化和对话管理能力。
 
 ### F-12：用户头像 + 昵称
-
-| 维度 | 内容 |
-|------|------|
-| 执行工作 | User 模型新增 nickname/avatar/preferences 字段，后端 PUT /auth/profile 端点，前端设置页头像选择器+昵称输入 |
-| 实现手段 | SQLAlchemy 新增字段，auth_service.update_profile，16 个预设 emoji 头像 |
-| 新增功能 | 用户可选择预设头像和编辑昵称，侧边栏底部和消息气泡显示用户头像 |
+- User 模型新增 nickname / avatar / preferences 字段，PUT /auth/profile 端点，16 个预设 emoji 头像
 
 ### F-13：用户偏好设置
-
-| 维度 | 内容 |
-|------|------|
-| 执行工作 | User 模型 preferences 字段（JSON 字符串），前端设置页偏好配置区 |
-| 实现手段 | JSON 序列化存储，Pinia store 管理偏好状态 |
-| 新增功能 | 字体大小滑块（12-20px）、消息密度选择（舒适/紧凑），全局应用偏好 |
+- JSON 字符串存储偏好，前端字体大小滑块、消息密度选择、默认模型选择
 
 ### F-14：消息时间戳
+- ChatMessage 组件显示 HH:MM 格式时间
 
-| 维度 | 内容 |
-|------|------|
-| 执行工作 | ChatMessage 组件添加时间显示 |
-| 实现手段 | 格式化 created_at 字段为 HH:MM |
-| 新增功能 | 每条消息下方显示发送时间 |
-
-### F-15：消息编辑/删除
-
-| 维度 | 内容 |
-|------|------|
-| 执行工作 | 后端 PUT/DELETE /messages/{id} 端点，前端消息 hover 操作栏 |
-| 实现手段 | FastAPI 端点 + 会话所有权校验，ChatMessage 组件操作按钮 |
-| 新增功能 | 用户消息可编辑，所有消息可删除 |
+### F-15：消息编辑 / 删除
+- 后端 PUT/DELETE /messages/{id}，前端 hover 操作栏
 
 ### F-16：会话置顶 + 归档
-
-| 维度 | 内容 |
-|------|------|
-| 执行工作 | Conversation 模型新增 pinned/archived 字段，后端 pin/archive 端点，侧边栏分组显示 |
-| 实现手段 | Boolean 字段 + toggle 端点，computed 属性分组排序 |
-| 新增功能 | 会话置顶（置顶区在前）、会话归档（独立归档视图），置顶图标标识 |
+- Conversation 模型新增 pinned / archived 字段，toggle 端点，侧边栏分组显示
 
 ### F-17：系统提示词
-
-| 维度 | 内容 |
-|------|------|
-| 执行工作 | Conversation 模型新增 system_prompt 字段，后端端点 + SystemPromptDialog 组件 |
-| 实现手段 | Text 字段存储，load_history 注入首条 system message |
-| 新增功能 | 每个会话可设置独立系统提示词，影响 AI 回答风格和行为 |
+- Conversation 模型新增 system_prompt 字段，SystemPromptDialog 弹窗编辑
 
 ### F-18：键盘快捷键
-
-| 维度 | 内容 |
-|------|------|
-| 执行工作 | Chat.vue 添加全局 keydown 监听 |
-| 实现手段 | onMounted/onUnmounted 生命周期管理事件监听 |
-| 新增功能 | Ctrl+N 新建对话、Ctrl+K 聚焦搜索、Ctrl+Shift+E 导出对话、Escape 关闭侧边栏 |
+- Ctrl+N 新建、Ctrl+K 搜索、Ctrl+Shift+E 导出、Escape 关闭侧边栏
 
 ### F-19：默认学习助手系统提示词
-
-| 维度 | 内容 |
-|------|------|
-| 执行工作 | config.py 新增 DEFAULT_SYSTEM_PROMPT，ai_service.py load_history 注入默认提示词 |
-| 实现手段 | 环境变量可覆盖，会话无自定义提示词时自动使用默认的 |
-| 新增功能 | AI 定位为学习助手，围绕学习场景回答，支持中文，可被用户自定义提示词覆盖 |
+- config.py 新增 DEFAULT_SYSTEM_PROMPT，会话无自定义提示词时自动使用
 
 ### F-20：数据库字段迁移
-
-| 维度 | 内容 |
-|------|------|
-| 执行工作 | 对已有 MySQL 表执行 ALTER TABLE 添加新字段 |
-| 实现手段 | users 表添加 nickname/avatar/preferences，conversations 表添加 pinned/archived/system_prompt |
-| 新增功能 | 修复第二轮扩展后数据库表结构与 ORM 模型不同步的问题 |
+- ALTER TABLE 添加第二轮扩展所需的新字段
 
 ---
 
-## 第三轮优化（功能修复与体验改进）
+## 阶段七：第三轮优化（G-1 ~ G-6）
+
+修复功能缺陷，改进交互体验。
 
 ### G-1：修复事件处理器写法错误
-
-| 维度 | 内容 |
-|------|------|
-| 执行工作 | Chat.vue 中 @edit/@delete 事件绑定修正 |
-| 实现手段 | `@edit="handleEdit(msg)"` → `@edit="() => handleEdit(msg)"` |
-| 移除功能 | 移除渲染时立即执行函数调用的错误写法 |
+- `@edit="handleEdit(msg)"` → `@edit="() => handleEdit(msg)"`，避免渲染时立即执行
 
 ### G-2：消息区域自动滚动
-
-| 维度 | 内容 |
-|------|------|
-| 执行工作 | Chat.vue 添加消息区域自动滚动逻辑 |
-| 实现手段 | watch 监听 messages 长度和最后一条消息内容，nextTick + scrollTop 滚动到底部 |
-| 新增功能 | 新消息到达和流式输出时自动滚动到最新消息 |
+- watch 监听 messages 长度和最后一条消息内容，nextTick + scrollTop 滚动到底部
 
 ### G-3：编辑消息弹窗替换原生 prompt
-
-| 维度 | 内容 |
-|------|------|
-| 执行工作 | Chat.vue handleEdit 改用 ElMessageBox.prompt |
-| 实现手段 | Element Plus 弹窗组件，textarea 输入，内容校验 |
-| 调整功能 | 原生 prompt() 替换为与 UI 风格一致的弹窗 |
+- 原生 prompt() 替换为 ElMessageBox.prompt，textarea 输入 + 内容校验
 
 ### G-4：输入框自动调整高度
-
-| 维度 | 内容 |
-|------|------|
-| 执行工作 | ChatInput.vue textarea 添加自动增高逻辑 |
-| 实现手段 | @input 事件触发 autoResize，scrollHeight 动态设置高度，最大 150px，发送后重置 |
-| 新增功能 | 多行输入时输入框自动增高，避免文本截断 |
+- @input 事件触发 autoResize，scrollHeight 动态设置高度，最大 150px
 
 ### G-5：修复重新生成消息重复 bug
-
-| 维度 | 内容 |
-|------|------|
-| 执行工作 | ChatRequest 新增 regenerate 标志，后端 chat 端点区分重新生成模式 |
-| 实现手段 | regenerate=true 时删除上一条 assistant 消息并跳过 save_user_message，前端 streamChat 传递 regenerate 参数 |
-| 移除功能 | 移除重新生成时重复保存用户消息的逻辑 |
+- ChatRequest 新增 regenerate 标志，后端区分重新生成模式，跳过重复保存用户消息
 
 ### G-6：marked.setOptions 优化
+- 从组件内调用改为普通 `<script>` 块模块级单次调用
 
-| 维度 | 内容 |
-|------|------|
-| 执行工作 | ChatMessage.vue 中 marked 配置移至模块级 |
-| 实现手段 | 普通 `<script>` 块中调用 setOptions，仅在模块加载时执行一次 |
-| 调整功能 | 从每个组件实例调用改为模块级单次调用 |
+---
 
-### G-7：修复登录/注册表单校验错误提示
+## 阶段八：第四轮优化（G-7 ~ G-10）
 
-| 维度 | 内容 |
-|------|------|
-| 执行工作 | Login.vue / Register.vue 校验失败处理修正 |
-| 实现手段 | validate() 失败后直接 return，不进入 API catch 分支 |
-| 移除功能 | 移除校验失败时显示"用户名或密码错误"等误导性提示 |
+修复表单校验和偏好加载问题。
+
+### G-7：修复登录 / 注册表单校验错误提示
+- validate() 失败后直接 return，不进入 API catch 分支
 
 ### G-8：设置页偏好数据加载时序修复
-
-| 维度 | 内容 |
-|------|------|
-| 执行工作 | Settings.vue 表单初始化改为 onMounted 异步加载后填充 |
-| 实现手段 | await userStore.loadProfile() 后再赋值 profileForm / prefForm |
-| 移除功能 | 移除组件创建时直接取 store 值（可能为空）的写法 |
+- onMounted 中 await loadProfile() 后再赋值表单，避免空值覆盖
 
 ### G-9：默认模型偏好生效
-
-| 维度 | 内容 |
-|------|------|
-| 执行工作 | chat store loadModels 中检查用户 defaultModel 偏好 |
-| 实现手段 | 优先级：localStorage 模型 > 偏好 defaultModel > 服务端默认值 |
-| 新增功能 | 用户在设置页选择的默认模型在加载时自动生效 |
+- loadModels 优先级：localStorage > 偏好 defaultModel > 服务端默认值
 
 ### G-10：消息密度设置应用到消息组件
-
-| 维度 | 内容 |
-|------|------|
-| 执行工作 | ChatMessage 新增 density prop，Chat.vue 传递密度值 |
-| 实现手段 | CSS 变量 --row-gap 控制消息行间距，compact/normal/relaxed 三档 |
-| 新增功能 | 消息密度偏好（紧凑/正常/宽松）实时应用到消息显示 |
+- ChatMessage 新增 density prop，CSS 变量 --row-gap 控制行间距
 
 ---
 
-## 第五轮优化（Bug 修复与体验改进）
+## 阶段九：第五轮优化（H-1 ~ H-12）
 
-### H-1：修复设置页修改密码表单校验错误提示
+全面排查并修复 Bug 和体验问题。
 
-| 维度 | 内容 |
-|------|------|
-| 执行工作 | Settings.vue handleSubmit 校验失败处理修正 |
-| 实现手段 | validate() 失败后直接 return，不进入 API catch 分支 |
-| 移除功能 | 移除校验失败时显示"旧密码错误"等误导性提示 |
+### H-1：修复设置页修改密码校验拦截
+- validate() 加 try-catch，校验失败不再显示"旧密码错误"
 
-### H-2：移动端侧边栏会话操作按钮修复
-
-| 维度 | 内容 |
-|------|------|
-| 执行工作 | Sidebar.vue 添加展开按钮和 expandedId 状态管理 |
-| 实现手段 | 移动端显示 ⋯ 展开按钮，点击后展开操作栏；桌面端保留 hover 展示 |
-| 移除功能 | 移除移动端 hover 隐藏操作按钮的 CSS 规则 |
-| 新增功能 | 移动端可通过点击展开/收起会话操作菜单 |
+### H-2：移动端侧边栏操作按钮修复
+- 添加 ⋯ 展开按钮 + expandedId 状态，移动端点击展开操作菜单
 
 ### H-3：设置页导航改用 Vue Router
-
-| 维度 | 内容 |
-|------|------|
-| 执行工作 | Sidebar.vue goSettings() 改用 router.push |
-| 实现手段 | 引入 useRouter，emit('close') 关闭侧边栏后路由跳转 |
-| 调整功能 | window.location.href 替换为 Vue Router，避免整页刷新丢失状态 |
+- `window.location.href` 替换为 `router.push`，避免整页刷新丢失状态
 
 ### H-4：消息发送错误处理
-
-| 维度 | 内容 |
-|------|------|
-| 执行工作 | chat store sendMessage 添加错误处理逻辑 |
-| 实现手段 | 流式失败时移除空 assistant 消息，ElMessage 错误提示 |
-| 新增功能 | AI 未返回回复或网络异常时提示用户，清理残留空消息 |
+- 流式失败时移除空 assistant 消息，ElMessage 错误提示
 
 ### H-5：归档会话搜索修复
-
-| 维度 | 内容 |
-|------|------|
-| 执行工作 | Sidebar.vue 搜索逻辑改为从完整会话列表出发 |
-| 实现手段 | 按当前归档模式过滤后再搜索关键词，不再依赖 filteredConversations |
-| 调整功能 | 归档模式下可正确搜索归档会话 |
+- 搜索逻辑从 conversations 全量出发，按归档模式过滤后再搜索
 
 ### H-7：marked 配置去重
-
-| 维度 | 内容 |
-|------|------|
-| 执行工作 | ChatMessage.vue 移除 script setup 中的重复 marked.setOptions 调用 |
-| 移除功能 | 移除与模块级配置完全重复的组件内配置 |
+- 移除 script setup 中重复的 marked.setOptions 调用
 
 ### H-8：归档会话数量提示
-
-| 维度 | 内容 |
-|------|------|
-| 执行工作 | Sidebar.vue 归档按钮显示已归档数量 |
-| 实现手段 | archivedCount computed 属性统计归档会话数，按钮文本显示"已归档 (N)" |
-| 新增功能 | 用户可直观看到归档会话数量 |
+- 归档按钮显示"已归档 (N)"
 
 ### H-11：AI 消息复制渲染文本
-
-| 维度 | 内容 |
-|------|------|
-| 执行工作 | ChatMessage.vue 复制功能改为复制渲染后文本 |
-| 实现手段 | AI 消息通过 bubbleRef 获取 .content 元素的 innerText，用户消息保持原样 |
-| 调整功能 | 复制 AI 消息不再输出原始 Markdown 源码 |
+- AI 消息复制 innerText 而非原始 Markdown
 
 ---
 
-## 工程化改进
+## 阶段十：工程化改进（I-1）
 
 ### I-1：Alembic 数据库迁移
-
-| 维度 | 内容 |
-|------|------|
-| 执行工作 | 集成 Alembic 数据库迁移工具，生成初始迁移脚本 |
-| 实现手段 | alembic init + env.py 配置读取应用 DATABASE_URL + autogenerate 生成初始迁移 |
-| 新增功能 | 数据库表结构变更纳入版本控制，支持 `alembic upgrade head` 升级和 `alembic downgrade -1` 回滚 |
-| 移除功能 | 移除 main.py 中的 `Base.metadata.create_all()`，改用 alembic 管理表结构 |
-| 调整功能 | requirements.txt 新增 alembic 依赖，创建 models/__init__.py |
+- 集成 Alembic，env.py 读取应用 DATABASE_URL 并导入所有 ORM 模型
+- 生成初始迁移脚本，数据库 stamp 到当前版本
+- 移除 main.py 中的 `Base.metadata.create_all()`，表结构改由 alembic 管理
+- 以后修改 ORM 模型后：`alembic revision --autogenerate -m "描述"` → `alembic upgrade head`
