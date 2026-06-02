@@ -515,3 +515,45 @@ AIIL/
 - 后端：chat 端点中，若会话标题仍为「新对话」，用用户消息前 30 字自动更新
 - 前端：chat store sendMessage 中同步更新本地会话标题
 - 支持多行文本（换行替换为空格）和纯图片对话（回退为「图片对话」）
+
+---
+
+## 阶段二十：知识卡片编辑功能
+
+支持对已保存的知识卡片进行内容和标签的编辑。
+
+### S-1：后端 PUT /cards/{id}
+- 新增 KnowledgeCardUpdate schema（content/tags 均可选）
+- cards 路由新增 update_card 端点，部分更新（仅传入的字段被修改）
+
+### S-2：前端卡片编辑 UI
+- Cards.vue 新增编辑模式：textarea 编辑内容、input 编辑标签
+- cards store 新增 editCard action
+- cards API 新增 updateCard 请求函数
+
+---
+
+## 阶段二十一：消息分页与无限滚动
+
+支持长对话的消息分页加载，首屏仅加载最新 50 条，向上滚动自动加载更早的消息。
+
+### T-1：后端分页支持
+- chat_service.get_messages 新增 skip/limit 参数，返回 {total, messages} 结构
+- history 路由 messages 端点透传 skip/limit 查询参数
+
+### T-2：前端无限滚动
+- chat store 新增 hasMore/loadingMore 状态
+- selectConversation 首次加载 50 条，loadMoreMessages 追加加载
+- Chat.vue 新增 handleScroll：距顶部 50px 时触发加载，加载后补偿滚动位置保持视觉不变
+
+---
+
+## 阶段二十二：真流式 SSE 改造
+
+将 SSE 对话从「回放式」（先收集完整响应再逐 chunk 回放）改为「真流式」（收到 AI chunk 立即转发），显著降低首 token 延迟。
+
+### U-1：后端异步流式
+- ai_service.call_ai_api 改为 async 生成器 stream_ai_api，使用 httpx.AsyncClient
+- 每收到一个 content chunk 立即 yield，而非先收集到列表
+- chat 端点改为 async def，内部异步生成器边转发边收集完整回复
+- 流结束后将完整回复存入数据库（保证数据持久化）

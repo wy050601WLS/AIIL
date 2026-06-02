@@ -4,9 +4,10 @@
 1. save_user_message — 保存用户消息到数据库
 2. load_history — 加载完整对话历史，转换为 OpenAI 兼容格式（含多模态）
 3. verify_conversation_owner — 校验会话归属权
-4. call_ai_api — 流式调用 AI API，收集完整响应和分块数据
+4. stream_ai_api — 真流式调用 AI API，以异步生成器逐 chunk 转发
 
-注意：采用「回放式 SSE」模式——后端先完整接收 AI 响应并存库，再逐 chunk 回放给前端。
+注意：采用「真流式 SSE」模式——后端收到 AI 每个 chunk 后立即转发给前端，
+     实现低延迟的逐 token 显示效果。
 """
 
 import json
@@ -86,20 +87,18 @@ def verify_conversation_owner(conversation_id: int, user: User, db: Session) -> 
     return conv
 
 
-def call_ai_api(history: list[dict], model: str | None = None) -> tuple[list[str], str]:
-    """流式调用 AI API 并收集完整响应
+async def stream_ai_api(history: list[dict], model: str | None = None):
+    """真流式调用 AI API — 以异步生成器逐 chunk 转发
 
-    采用回放式 SSE 模式：
-    1. 以 stream=True 请求 AI API
-    2. 逐行解析 SSE data，收集每个 content chunk
-    3. 返回 (chunks列表, 完整文本)，路由层将 chunks 逐个回放给前端
+    使用 httpx.AsyncClient 读取 SSE 流，每收到一个 content chunk 立即 yield，
+    实现低延迟的逐 token 转发。调用方可在迭代过程中将 chunk 实时推送给前端。
 
     Args:
         history: OpenAI 格式的消息列表（含 system prompt）
         model: 指定模型 ID，为空则使用默认模型
 
-    Returns:
-        (chunks, full_text) 元组 — chunks 用于 SSE 回放，full_text 用于存库
+    Yields:
+        str — 每次产出一个 content chunk 文本
     """
     url = f"{settings.AI_BASE_URL}/v1/chat/completions"
     headers = {
@@ -113,11 +112,9 @@ def call_ai_api(history: list[dict], model: str | None = None) -> tuple[list[str
         "messages": history,
     }
 
-    chunks = []
-    full = ""
-    with httpx.Client(timeout=120.0) as client:
-        with client.stream("POST", url, headers=headers, json=payload) as response:
-            for line in response.iter_lines():
+    async with httpx.AsyncClient(timeout=120.0) as client:
+        async with client.stream("POST", url, headers=headers, json=payload) as response:
+            async for line in response.aiter_lines():
                 if not line or not line.startswith("data: "):
                     continue
                 data_str = line[6:]
@@ -131,8 +128,6 @@ def call_ai_api(history: list[dict], model: str | None = None) -> tuple[list[str
                     delta = choices[0].get("delta", {})
                     content = delta.get("content")
                     if content:
-                        full += content
-                        chunks.append(content)
+                        yield content
                 except json.JSONDecodeError:
                     continue
-    return chunks, full

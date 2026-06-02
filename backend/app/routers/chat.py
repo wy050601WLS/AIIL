@@ -1,7 +1,7 @@
 """AI 对话路由模块
 
 核心端点：
-- POST /chat：SSE 流式对话（回放式 — 先收集完整响应再逐 chunk 回放）
+- POST /chat：SSE 流式对话（真流式 — 收到 AI chunk 立即转发给前端）
 - GET /conversations/{id}/export：导出对话为 Markdown
 - GET /models：可用模型列表
 - PUT/DELETE /messages/{id}：编辑/删除消息
@@ -18,7 +18,7 @@ from app.database import get_db
 from app.models.conversation import Conversation, Message
 from app.models.user import User
 from app.schemas.conversation import ChatRequest
-from app.services.ai_service import verify_conversation_owner, save_user_message, load_history, call_ai_api
+from app.services.ai_service import verify_conversation_owner, save_user_message, load_history, stream_ai_api
 from app.utils.security import get_current_user
 
 
@@ -30,21 +30,19 @@ router = APIRouter(tags=["AI 对话"])
 
 
 @router.post("/chat")
-def chat(data: ChatRequest, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    """SSE 流式对话端点
+async def chat(data: ChatRequest, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """SSE 真流式对话端点
 
     流程：
     1. 校验会话归属权
     2. 若为重新生成，删除上一条 AI 回复；否则保存用户消息
     3. 加载完整对话历史（含 system prompt）
-    4. 调用 AI API 获取流式响应（回放模式：先收集完整响应）
-    5. 将 AI 回复存入数据库
-    6. 以 SSE 格式逐 chunk 回放给前端
+    4. 以异步生成器调用 AI API，每收到一个 chunk 立即转发给前端（低延迟）
+    5. 流结束后将 AI 完整回复存入数据库
     """
     verify_conversation_owner(data.conversation_id, user, db)
 
     if data.regenerate:
-        # 重新生成：删除最后一条 AI 回复
         last_assistant = (
             db.query(Message)
             .filter(Message.conversation_id == data.conversation_id, Message.role == "assistant")
@@ -66,22 +64,22 @@ def chat(data: ChatRequest, user: User = Depends(get_current_user), db: Session 
         db.commit()
 
     history, conv = load_history(data.conversation_id, db)
-    chunks, full_response = call_ai_api(history, model=data.model)
 
-    # 将 AI 完整回复存入数据库
-    if full_response:
-        msg = Message(
-            conversation_id=data.conversation_id,
-            role="assistant",
-            content=full_response,
-        )
-        db.add(msg)
-        db.commit()
-
-    def generate():
-        """SSE 生成器：逐 chunk 回放 AI 响应，最后发送 [DONE] 标记"""
-        for chunk in chunks:
+    async def generate():
+        """真流式 SSE 生成器：收到 AI chunk 立即转发，流结束后存库"""
+        full_response = ""
+        async for chunk in stream_ai_api(history, model=data.model):
+            full_response += chunk
             yield f"data: {chunk}\n\n"
+        # 流结束后将完整回复存入数据库
+        if full_response:
+            msg = Message(
+                conversation_id=data.conversation_id,
+                role="assistant",
+                content=full_response,
+            )
+            db.add(msg)
+            db.commit()
         yield "data: [DONE]\n\n"
 
     return StreamingResponse(generate(), media_type="text/event-stream")
