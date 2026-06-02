@@ -5,6 +5,7 @@ const routes = [
   { path: '/register', name: 'Register', component: () => import('../views/Register.vue') },
   { path: '/', name: 'Chat', component: () => import('../views/Chat.vue'), meta: { auth: true } },
   { path: '/settings', name: 'Settings', component: () => import('../views/Settings.vue'), meta: { auth: true } },
+  { path: '/cards', name: 'Cards', component: () => import('../views/Cards.vue'), meta: { auth: true } },
 ]
 
 const router = createRouter({

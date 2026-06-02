@@ -3,12 +3,14 @@ import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useChatStore } from '../stores/chat'
 import { useUserStore } from '../stores/user'
+import { useCardsStore } from '../stores/cards'
 import Sidebar from '../components/Sidebar.vue'
 import ChatMessage from '../components/ChatMessage.vue'
 import ChatInput from '../components/ChatInput.vue'
 
 const chatStore = useChatStore()
 const userStore = useUserStore()
+const cardsStore = useCardsStore()
 const sidebarVisible = ref(false)
 const messagesAreaRef = ref(null)
 
@@ -103,6 +105,11 @@ async function handleDelete(msg) {
     // cancelled
   }
 }
+
+async function handleSaveCard(msg) {
+  if (!msg.content?.trim()) return
+  await cardsStore.addCard(msg.content, `对话 #${chatStore.currentId}`)
+}
 </script>
 
 <template>
@@ -162,6 +169,7 @@ async function handleDelete(msg) {
           @regenerate="handleRegenerate"
           @edit="() => handleEdit(msg)"
           @delete="() => handleDelete(msg)"
+          @save-card="() => handleSaveCard(msg)"
         />
       </div>
 

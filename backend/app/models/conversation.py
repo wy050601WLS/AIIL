@@ -31,3 +31,14 @@ class Message(Base):
     created_at = Column(DateTime, default=datetime.now)
 
     conversation = relationship("Conversation", back_populates="messages")
+
+
+class KnowledgeCard(Base):
+    __tablename__ = "knowledge_cards"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    content = Column(Text, nullable=False)
+    source = Column(String(200), nullable=True)
+    tags = Column(String(500), nullable=True)
+    created_at = Column(DateTime, default=datetime.now)

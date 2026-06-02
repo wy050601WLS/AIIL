@@ -17,7 +17,7 @@ AIIL/
 │   ├── app/
 │   │   ├── models/          # SQLAlchemy ORM 模型
 │   │   ├── schemas/         # Pydantic 请求/响应模型
-│   │   ├── routers/         # API 路由（auth / history / chat）
+│   │   ├── routers/         # API 路由（auth / history / chat / cards）
 │   │   ├── services/        # 业务逻辑层
 │   │   ├── utils/           # 工具（JWT / 密码哈希）
 │   │   ├── config.py        # 统一配置
@@ -34,7 +34,7 @@ AIIL/
 │   │   ├── components/      # ChatMessage / ChatInput / Sidebar / SystemPromptDialog
 │   │   ├── router/          # Vue Router 路由配置
 │   │   ├── stores/          # Pinia 状态管理（user / chat / theme）
-│   │   ├── views/           # Login / Register / Chat / Settings
+│   │   ├── views/           # Login / Register / Chat / Settings / Cards
 │   │   ├── style.css        # 全局主题变量
 │   │   └── main.js          # 应用入口
 │   └── Dockerfile
@@ -368,3 +368,27 @@ AIIL/
 ### K-4：消息图片显示
 - ChatMessage 组件消息气泡中显示图片缩略图
 - 点击图片可全屏预览
+
+---
+
+## 阶段十三：知识卡片
+
+新增知识卡片功能，收藏 AI 回复中的精华内容。
+
+### L-1：后端知识卡片 CRUD
+- KnowledgeCard 模型：id, user_id, content, source, tags, created_at
+- KnowledgeCardCreate / KnowledgeCardResponse Pydantic schemas
+- cards 路由：POST /cards, GET /cards, DELETE /cards/{card_id}
+- 所有接口需登录，删除操作校验归属权
+- Alembic 迁移创建 knowledge_cards 表
+
+### L-2：前端知识卡片页面
+- api/cards.js：createCard, getCards, deleteCard
+- stores/cards.js：Pinia store，loadCards / addCard / removeCard
+- views/Cards.vue：卡片列表页，支持标签筛选、删除
+- 路由 /cards，需登录
+
+### L-3：对话中提取卡片
+- ChatMessage 气泡操作栏新增「提取卡片」按钮（仅 assistant 消息）
+- 点击后将消息内容保存为知识卡片，来源标记为对话 ID
+- Sidebar 底栏新增「卡片」入口

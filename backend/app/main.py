@@ -6,7 +6,7 @@ from slowapi.errors import RateLimitExceeded
 
 from app.config import settings
 from app.database import Base  # noqa: F401 — 确保模型被注册
-from app.routers import auth, history, chat
+from app.routers import auth, history, chat, cards
 
 limiter = Limiter(key_func=get_remote_address, default_limits=["60/minute"])
 
@@ -25,6 +25,7 @@ app.add_middleware(
 app.include_router(auth.router)
 app.include_router(history.router)
 app.include_router(chat.router)
+app.include_router(cards.router)
 
 
 @app.get("/")

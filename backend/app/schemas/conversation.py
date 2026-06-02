@@ -43,3 +43,19 @@ class ChatRequest(BaseModel):
 
 class SystemPromptUpdate(BaseModel):
     system_prompt: Optional[str] = None
+
+
+class KnowledgeCardCreate(BaseModel):
+    content: str = Field(..., min_length=1)
+    source: str | None = None
+    tags: str | None = None
+
+
+class KnowledgeCardResponse(BaseModel):
+    id: int
+    content: str
+    source: str | None = None
+    tags: str | None = None
+    created_at: datetime
+
+    model_config = {"from_attributes": True}

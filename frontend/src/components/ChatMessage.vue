@@ -40,7 +40,7 @@ const rowStyle = computed(() => {
   return { '--row-gap': v + 'px' }
 })
 
-const emit = defineEmits(['regenerate', 'edit', 'delete'])
+const emit = defineEmits(['regenerate', 'edit', 'delete', 'saveCard'])
 const bubbleRef = ref(null)
 
 const rendered = computed(() => {
@@ -97,6 +97,7 @@ function copyContent() {
         <el-button text size="small" class="msg-action-btn" @click="copyContent">复制</el-button>
         <el-button v-if="role === 'user'" text size="small" class="msg-action-btn" @click="emit('edit')">编辑</el-button>
         <el-button text size="small" class="msg-action-btn delete-msg-btn" @click="emit('delete')">删除</el-button>
+        <el-button v-if="role === 'assistant'" text size="small" class="msg-action-btn" @click="emit('saveCard')">提取卡片</el-button>
         <el-button v-if="role === 'assistant' && isLast" text size="small" class="msg-action-btn" @click="emit('regenerate')">重新生成</el-button>
       </div>
       <div v-if="timeDisplay" class="time-stamp">{{ timeDisplay }}</div>

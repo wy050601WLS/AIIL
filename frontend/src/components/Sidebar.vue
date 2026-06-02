@@ -78,6 +78,11 @@ function goSettings() {
   router.push('/settings')
 }
 
+function goCards() {
+  emit('close')
+  router.push('/cards')
+}
+
 function startRename(conv) {
   editingId.value = conv.id
   editTitle.value = conv.title
@@ -236,6 +241,7 @@ async function savePrompt(prompt) {
         <span class="username">{{ userStore.displayName }}</span>
       </div>
       <div class="footer-actions">
+        <el-button text size="small" @click="goCards">卡片</el-button>
         <el-button text size="small" @click="themeStore.toggle">
           {{ themeStore.theme === 'dark' ? '浅色' : '深色' }}
         </el-button>
