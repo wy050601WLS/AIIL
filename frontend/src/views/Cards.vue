@@ -1,3 +1,9 @@
+<!--
+  Cards 视图 — 知识卡片页
+
+  功能：展示知识卡片列表，支持标签筛选、删除
+  卡片来源：从 AI 回复中点击「提取卡片」保存
+-->
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import { ElMessageBox } from 'element-plus'
@@ -5,8 +11,9 @@ import { useCardsStore } from '../stores/cards'
 
 const cardsStore = useCardsStore()
 
-const filterTag = ref('')
+const filterTag = ref('')  // 当前筛选的标签（空表示全部）
 
+/** 根据标签关键词过滤卡片列表 */
 const filteredCards = computed(() => {
   if (!filterTag.value.trim()) return cardsStore.cards
   const q = filterTag.value.toLowerCase()
@@ -15,6 +22,7 @@ const filteredCards = computed(() => {
   )
 })
 
+/** 提取所有卡片中的不重复标签（用于标签筛选栏） */
 const allTags = computed(() => {
   const set = new Set()
   for (const c of cardsStore.cards) {
@@ -27,6 +35,7 @@ const allTags = computed(() => {
 
 onMounted(() => cardsStore.loadCards())
 
+/** 删除卡片（带确认弹窗） */
 async function handleDelete(card) {
   try {
     await ElMessageBox.confirm('确定删除这条知识卡片？', '删除卡片', {
@@ -36,16 +45,18 @@ async function handleDelete(card) {
     })
     await cardsStore.removeCard(card.id)
   } catch {
-    // cancelled
+    // 用户取消删除
   }
 }
 
+/** 格式化时间为 M/D HH:MM */
 function formatTime(dateStr) {
   if (!dateStr) return ''
   const d = new Date(dateStr)
   return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
 }
 
+/** 将逗号分隔的标签字符串拆分为数组 */
 function tagList(tags) {
   if (!tags) return []
   return tags.split(',').map(t => t.trim()).filter(Boolean)

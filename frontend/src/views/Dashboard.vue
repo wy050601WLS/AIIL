@@ -1,3 +1,9 @@
+<!--
+  Dashboard 视图 — 学习面板页
+
+  功能：展示学习统计数据（统计卡片、30天消息趋势柱状图、热门标签）
+  数据来源：GET /dashboard/stats API
+-->
 <script setup>
 import { computed, onMounted } from 'vue'
 import { useDashboardStore } from '../stores/dashboard'
@@ -6,6 +12,7 @@ const store = useDashboardStore()
 
 onMounted(() => store.loadStats())
 
+/** 统计卡片数据（4 宫格：对话数、消息数、卡片数、活跃天数） */
 const statCards = computed(() => {
   if (!store.stats) return []
   return [
@@ -16,15 +23,18 @@ const statCards = computed(() => {
   ]
 })
 
+/** 30 天消息数的最大值（用于柱状图高度比例计算） */
 const maxCount = computed(() => {
   if (!store.stats) return 1
   return Math.max(1, ...store.stats.daily_messages.map(d => d.count))
 })
 
+/** 计算柱状图每根柱子的高度百分比 */
 function barHeight(count) {
   return Math.round((count / maxCount.value) * 100) + '%'
 }
 
+/** 格式化日期为 M/D（用于柱状图底部标签） */
 function formatDate(dateStr) {
   const d = new Date(dateStr)
   return `${d.getMonth() + 1}/${d.getDate()}`

@@ -1,7 +1,15 @@
+<!--
+  ChatMessage 组件 — 消息气泡
+
+  功能：显示用户/AI 消息，支持 Markdown 渲染、代码高亮、图片预览、操作按钮
+  Props: role, content, images, isLast, loading, createdAt, fontSize, density
+  Events: regenerate — 重新生成, edit — 编辑消息, delete — 删除消息, saveCard — 提取卡片
+-->
 <script>
 import { marked } from 'marked'
 import hljs from 'highlight.js'
 
+// 配置 Markdown 渲染器：启用代码高亮、换行转 <br>、GFM 语法
 marked.setOptions({
   highlight(code, lang) {
     if (lang && hljs.getLanguage(lang)) {
@@ -22,18 +30,19 @@ import { useUserStore } from '../stores/user'
 const userStore = useUserStore()
 
 const props = defineProps({
-  role: { type: String, required: true },
-  content: { type: String, default: '' },
-  images: { type: Array, default: () => [] },
-  isLast: { type: Boolean, default: false },
-  loading: { type: Boolean, default: false },
-  createdAt: { type: String, default: '' },
-  fontSize: { type: Number, default: 15 },
-  density: { type: String, default: 'normal' },
+  role: { type: String, required: true },         // 消息角色：'user' 或 'assistant'
+  content: { type: String, default: '' },          // 消息文本内容
+  images: { type: Array, default: () => [] },      // 图片列表（base64 dataUrl）
+  isLast: { type: Boolean, default: false },       // 是否为最后一条消息（显示重新生成按钮）
+  loading: { type: Boolean, default: false },      // AI 是否正在生成
+  createdAt: { type: String, default: '' },        // 消息创建时间
+  fontSize: { type: Number, default: 15 },         // 字体大小（来自用户偏好）
+  density: { type: String, default: 'normal' },    // 消息密度：compact/normal/relaxed
 })
 
-const previewImage = ref(null)
+const previewImage = ref(null)  // 全屏预览的图片 URL
 
+// 根据密度设置消息行间距
 const densityMap = { compact: 4, normal: 8, relaxed: 14 }
 const rowStyle = computed(() => {
   const v = densityMap[props.density] ?? 8
@@ -43,16 +52,19 @@ const rowStyle = computed(() => {
 const emit = defineEmits(['regenerate', 'edit', 'delete', 'saveCard'])
 const bubbleRef = ref(null)
 
+/** 将 AI 消息的 Markdown 内容渲染为 HTML（用户消息不渲染） */
 const rendered = computed(() => {
   if (props.role === 'user') return null
   return marked.parse(props.content || '')
 })
 
+/** 头像显示：用户显示 emoji 头像或「你」，AI 显示「AI」 */
 const avatarDisplay = computed(() => {
   if (props.role === 'user') return userStore.avatar || '你'
   return 'AI'
 })
 
+/** 格式化消息时间为 HH:MM */
 const timeDisplay = computed(() => {
   if (!props.createdAt) return ''
   const d = new Date(props.createdAt)
@@ -61,10 +73,12 @@ const timeDisplay = computed(() => {
   return `${hh}:${mm}`
 })
 
+/** 气泡字体大小样式（跟随用户偏好） */
 const bubbleStyle = computed(() => ({
   fontSize: props.fontSize + 'px',
 }))
 
+/** 复制消息内容（AI 消息复制渲染后的纯文本） */
 function copyContent() {
   let text = props.content
   if (props.role === 'assistant' && bubbleRef.value) {

@@ -1,3 +1,10 @@
+<!--
+  ChatInput 组件 — 对话输入区
+
+  功能：文本输入、图片上传（点击/粘贴）、语音输入、发送/停止按钮
+  Props: loading (Boolean) — AI 是否正在生成
+  Events: send({content, images[]}) — 发送消息, stop — 停止生成
+-->
 <script setup>
 import { ref, nextTick, onUnmounted, computed } from 'vue'
 
@@ -6,16 +13,18 @@ defineProps({
 })
 
 const emit = defineEmits(['send', 'stop'])
-const input = ref('')
-const textareaRef = ref(null)
-const fileInputRef = ref(null)
-const images = ref([]) // [{ name, dataUrl }]
-const isRecording = ref(false)
-let recognition = null
+const input = ref('')               // 输入框文本
+const textareaRef = ref(null)       // textarea DOM 引用
+const fileInputRef = ref(null)      // 隐藏的 file input 引用
+const images = ref([])              // 待发送的图片列表 [{ name, dataUrl }]
+const isRecording = ref(false)      // 是否正在录音
+let recognition = null              // Web SpeechRecognition 实例
 
+// 浏览器语音识别 API（兼容 webkit 前缀）
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
 const speechSupported = computed(() => !!SpeechRecognition)
 
+/** 自动调整 textarea 高度（最大 150px） */
 function autoResize() {
   const el = textareaRef.value
   if (!el) return
@@ -23,6 +32,7 @@ function autoResize() {
   el.style.height = Math.min(el.scrollHeight, 150) + 'px'
 }
 
+/** 发送消息：触发 send 事件并清空输入 */
 function handleSend() {
   const text = input.value.trim()
   if (!text && images.value.length === 0) return
@@ -34,6 +44,7 @@ function handleSend() {
   })
 }
 
+/** Enter 发送，Shift+Enter 换行 */
 function handleKeydown(e) {
   if (e.key === 'Enter' && !e.shiftKey) {
     e.preventDefault()
@@ -41,7 +52,9 @@ function handleKeydown(e) {
   }
 }
 
-// === 语音输入 ===
+// ===== 语音输入 =====
+
+/** 切换语音录制状态（开始/停止） */
 function toggleVoice() {
   if (!SpeechRecognition) return
   if (isRecording.value) {
@@ -49,12 +62,13 @@ function toggleVoice() {
     return
   }
   recognition = new SpeechRecognition()
-  recognition.lang = 'zh-CN'
-  recognition.interimResults = true
-  recognition.continuous = true
+  recognition.lang = 'zh-CN'         // 中文识别
+  recognition.interimResults = true   // 实时显示中间结果
+  recognition.continuous = true       // 连续录音不停顿
 
   let finalText = input.value
 
+  // 识别结果回调：final 结果追加到文本，interim 结果实时预览
   recognition.onresult = (e) => {
     let interim = ''
     for (let i = e.resultIndex; i < e.results.length; i++) {
@@ -74,6 +88,7 @@ function toggleVoice() {
   isRecording.value = true
 }
 
+/** 停止语音录制 */
 function stopVoice() {
   if (recognition) {
     recognition.stop()
@@ -82,19 +97,24 @@ function stopVoice() {
   isRecording.value = false
 }
 
+// 组件卸载时停止录音，避免内存泄漏
 onUnmounted(() => { stopVoice() })
 
-// === 图片上传 ===
+// ===== 图片上传 =====
+
+/** 触发隐藏的 file input 点击 */
 function triggerFileInput() {
   fileInputRef.value?.click()
 }
 
+/** 处理文件选择事件 */
 function handleFileChange(e) {
   const files = Array.from(e.target.files || [])
   files.forEach(file => addImage(file))
-  e.target.value = ''
+  e.target.value = '' // 清空 input 允许重复选择同一文件
 }
 
+/** 将图片文件转为 base64 dataUrl 并添加到预览列表（最多 5 张） */
 function addImage(file) {
   if (!file.type.startsWith('image/')) return
   if (images.value.length >= 5) return
@@ -105,10 +125,12 @@ function addImage(file) {
   reader.readAsDataURL(file)
 }
 
+/** 从预览列表中移除指定图片 */
 function removeImage(index) {
   images.value.splice(index, 1)
 }
 
+/** 处理粘贴事件：如果剪贴板包含图片则自动添加 */
 function handlePaste(e) {
   const items = Array.from(e.clipboardData?.items || [])
   for (const item of items) {

@@ -1,3 +1,9 @@
+<!--
+  Login 视图 — 登录页
+
+  功能：用户名密码登录，表单验证，登录失败提示
+  登录成功后自动跳转到首页并加载用户资料
+-->
 <script setup>
 import { reactive, ref } from 'vue'
 import { useUserStore } from '../stores/user'
@@ -14,6 +20,7 @@ const rules = {
   password: [{ required: true, message: '请输入密码', trigger: 'blur' }],
 }
 
+/** 提交登录表单：验证 → 调用 store 登录 → 失败提示 */
 async function handleLogin() {
   try {
     await formRef.value.validate()

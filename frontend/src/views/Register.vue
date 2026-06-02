@@ -1,3 +1,9 @@
+<!--
+  Register 视图 — 注册页
+
+  功能：用户注册，含用户名/密码/确认密码表单验证
+  注册成功后自动登录并跳转首页
+-->
 <script setup>
 import { reactive, ref } from 'vue'
 import { useUserStore } from '../stores/user'
@@ -9,6 +15,7 @@ const loading = ref(false)
 
 const form = reactive({ username: '', password: '', confirmPassword: '' })
 
+// 表单验证规则：用户名 2-50 字符，密码 6-100 字符，两次密码一致
 const rules = {
   username: [
     { required: true, message: '请输入用户名', trigger: 'blur' },
@@ -30,6 +37,7 @@ const rules = {
   ],
 }
 
+/** 提交注册表单：验证 → 调用 store 注册（自动登录） → 失败提示 */
 async function handleRegister() {
   try {
     await formRef.value.validate()

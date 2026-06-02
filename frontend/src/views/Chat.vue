@@ -1,3 +1,9 @@
+<!--
+  Chat 视图 — 主对话页面
+
+  布局：左侧 Sidebar + 右侧消息区 + 底部输入框
+  功能：AI 流式对话、消息操作（编辑/删除/重新生成/提取卡片）、键盘快捷键
+-->
 <script setup>
 import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -11,12 +17,14 @@ import ChatInput from '../components/ChatInput.vue'
 const chatStore = useChatStore()
 const userStore = useUserStore()
 const cardsStore = useCardsStore()
-const sidebarVisible = ref(false)
-const messagesAreaRef = ref(null)
+const sidebarVisible = ref(false)      // 侧边栏是否显示（移动端控制）
+const messagesAreaRef = ref(null)      // 消息区域 DOM 引用（用于自动滚动）
 
+// 从用户偏好中读取字体大小和消息密度
 const fontSize = computed(() => userStore.preferences?.fontSize || 15)
 const density = computed(() => userStore.preferences?.messageDensity || 'normal')
 
+/** 滚动到消息列表底部 */
 function scrollToBottom() {
   nextTick(() => {
     if (messagesAreaRef.value) {
@@ -25,6 +33,7 @@ function scrollToBottom() {
   })
 }
 
+// 监听消息数量变化和最后一条消息内容变化，自动滚动到底部
 watch(() => chatStore.messages.length, scrollToBottom)
 watch(() => chatStore.messages[chatStore.messages.length - 1]?.content, scrollToBottom)
 
@@ -38,6 +47,7 @@ onUnmounted(() => {
   document.removeEventListener('keydown', handleKeydown)
 })
 
+/** 全局键盘快捷键处理 */
 function handleKeydown(e) {
   // Ctrl+N: 新建对话
   if (e.ctrlKey && e.key === 'n') {
@@ -52,7 +62,7 @@ function handleKeydown(e) {
       document.querySelector('.search-input')?.focus()
     }, 100)
   }
-  // Ctrl+Shift+E: 导出
+  // Ctrl+Shift+E: 导出当前会话
   if (e.ctrlKey && e.shiftKey && e.key === 'E') {
     e.preventDefault()
     chatStore.exportCurrent()
@@ -63,18 +73,22 @@ function handleKeydown(e) {
   }
 }
 
+/** 发送消息（来自 ChatInput 组件的 send 事件） */
 async function handleSend({ content, images }) {
   await chatStore.sendMessage(content, images)
 }
 
+/** 重新生成最后一条 AI 回复 */
 async function handleRegenerate() {
   await chatStore.regenerate()
 }
 
+/** 停止 AI 流式生成 */
 function handleStop() {
   chatStore.stopStreaming()
 }
 
+/** 编辑消息（弹出输入框，保存后同步更新） */
 async function handleEdit(msg) {
   try {
     const { value } = await ElMessageBox.prompt('编辑消息内容', '编辑消息', {
@@ -89,10 +103,11 @@ async function handleEdit(msg) {
       ElMessage.success('消息已更新')
     }
   } catch {
-    // cancelled
+    // 用户取消编辑
   }
 }
 
+/** 删除消息（带确认弹窗） */
 async function handleDelete(msg) {
   try {
     await ElMessageBox.confirm('确定删除这条消息？', '删除消息', {
@@ -102,10 +117,11 @@ async function handleDelete(msg) {
     })
     await chatStore.deleteMessage(msg.id)
   } catch {
-    // cancelled
+    // 用户取消删除
   }
 }
 
+/** 将 AI 消息保存为知识卡片 */
 async function handleSaveCard(msg) {
   if (!msg.content?.trim()) return
   await cardsStore.addCard(msg.content, `对话 #${chatStore.currentId}`)

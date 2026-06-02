@@ -1,3 +1,9 @@
+<!--
+  Settings 视图 — 用户设置页
+
+  功能：个人信息（昵称/头像）、偏好设置（字体/密度/默认模型）、修改密码
+  页面加载时从后端获取最新资料填充表单
+-->
 <script setup>
 import { reactive, ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
@@ -12,6 +18,7 @@ const loading = ref(false)
 
 const form = reactive({ oldPassword: '', newPassword: '', confirmPassword: '' })
 
+// 预设头像列表（emoji）
 const presetAvatars = [
   '🧑‍💻', '👨‍🎓', '👩‍🎓', '🧑‍🔬', '👨‍💼', '👩‍💼', '🦊', '🐱',
   '🐼', '🦉', '🌟', '🎯', '🚀', '💡', '📚', '🎨',
@@ -28,6 +35,7 @@ const prefForm = reactive({
   defaultModel: '',
 })
 
+// 页面加载时从后端获取最新资料并填充表单
 onMounted(async () => {
   await userStore.loadProfile()
   profileForm.nickname = userStore.nickname || ''
@@ -37,6 +45,7 @@ onMounted(async () => {
   prefForm.defaultModel = userStore.preferences?.defaultModel || ''
 })
 
+// 修改密码表单验证规则
 const rules = {
   oldPassword: [{ required: true, message: '请输入旧密码', trigger: 'blur' }],
   newPassword: [
@@ -55,6 +64,7 @@ const rules = {
   ],
 }
 
+/** 提交修改密码：验证旧密码 → 更新 → 强制重新登录 */
 async function handleSubmit() {
   try {
     await formRef.value.validate()
@@ -73,6 +83,7 @@ async function handleSubmit() {
   }
 }
 
+/** 保存个人信息（昵称和头像） */
 async function saveProfile() {
   try {
     await userStore.saveProfile({
@@ -85,6 +96,7 @@ async function saveProfile() {
   }
 }
 
+/** 保存偏好设置（字体大小、消息密度、默认模型） */
 async function savePreferences() {
   try {
     await userStore.saveProfile({ preferences: { ...prefForm } })
@@ -94,6 +106,7 @@ async function savePreferences() {
   }
 }
 
+/** 返回对话页 */
 function goBack() {
   router.push('/')
 }

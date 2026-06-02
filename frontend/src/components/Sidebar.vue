@@ -1,3 +1,10 @@
+<!--
+  Sidebar 组件 — 侧边栏
+
+  功能：会话列表（搜索/置顶/归档）、新建会话、会话操作（下拉菜单）、底栏导航
+  Props: visible (Boolean) — 是否显示侧边栏
+  Events: close — 关闭侧边栏（移动端点击遮罩或选中会话后触发）
+-->
 <script setup>
 import { ref, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -5,6 +12,7 @@ import { useRouter } from 'vue-router'
 import { useChatStore } from '../stores/chat'
 import { useUserStore } from '../stores/user'
 import { useThemeStore } from '../stores/theme'
+
 defineProps({
   visible: { type: Boolean, default: true },
 })
@@ -15,10 +23,11 @@ const userStore = useUserStore()
 const themeStore = useThemeStore()
 const router = useRouter()
 
-const editingId = ref(null)
-const editTitle = ref('')
-const searchQuery = ref('')
+const editingId = ref(null)    // 正在重命名的会话 ID
+const editTitle = ref('')      // 重命名输入框的值
+const searchQuery = ref('')    // 会话搜索关键词
 
+/** 根据搜索关键词过滤会话列表（null 表示无搜索，使用原始列表） */
 const searchFiltered = computed(() => {
   if (!searchQuery.value.trim()) return null
   const q = searchQuery.value.toLowerCase()
@@ -31,18 +40,22 @@ const searchFiltered = computed(() => {
   return list.filter(c => c.title.toLowerCase().includes(q))
 })
 
+/** 置顶会话列表（优先显示搜索结果，否则用 store 的过滤列表） */
 const pinnedList = computed(() => {
   const src = searchFiltered.value ?? chatStore.filteredConversations
   return src.filter(c => c.pinned)
 })
 
+/** 普通会话列表 */
 const normalList = computed(() => {
   const src = searchFiltered.value ?? chatStore.filteredConversations
   return src.filter(c => !c.pinned)
 })
 
+/** 已归档会话数量（用于显示角标） */
 const archivedCount = computed(() => chatStore.conversations.filter(c => c.archived).length)
 
+/** 分发会话下拉菜单的操作命令 */
 function handleConvAction(cmd, conv) {
   if (cmd === 'rename') startRename(conv)
   else if (cmd === 'pin') handlePin(conv)
@@ -50,41 +63,49 @@ function handleConvAction(cmd, conv) {
   else if (cmd === 'delete') handleDelete(conv)
 }
 
+/** 创建新会话并关闭侧边栏（移动端） */
 async function handleNew() {
   await chatStore.newConversation()
   emit('close')
 }
 
+/** 选中指定会话并关闭侧边栏 */
 async function handleSelect(id) {
   if (editingId.value === id) return
   await chatStore.selectConversation(id)
   emit('close')
 }
 
+/** 退出登录 */
 function handleLogout() {
   userStore.logout()
 }
 
+/** 跳转到设置页 */
 function goSettings() {
   emit('close')
   router.push('/settings')
 }
 
+/** 跳转到知识卡片页 */
 function goCards() {
   emit('close')
   router.push('/cards')
 }
 
+/** 跳转到学习面板页 */
 function goDashboard() {
   emit('close')
   router.push('/dashboard')
 }
 
+/** 开始重命名会话（显示输入框） */
 function startRename(conv) {
   editingId.value = conv.id
   editTitle.value = conv.title
 }
 
+/** 确认重命名（输入框失焦或按 Enter 时触发） */
 async function confirmRename(conv) {
   const title = editTitle.value.trim()
   if (!title) {
@@ -97,6 +118,7 @@ async function confirmRename(conv) {
   editingId.value = null
 }
 
+/** 删除会话（带确认弹窗） */
 async function handleDelete(conv) {
   try {
     await ElMessageBox.confirm(`确定删除会话「${conv.title}」？`, '删除会话', {
@@ -107,15 +129,17 @@ async function handleDelete(conv) {
     await chatStore.remove(conv.id)
     ElMessage.success('会话已删除')
   } catch {
-    // cancelled
+    // 用户取消删除
   }
 }
 
+/** 切换会话置顶状态 */
 async function handlePin(conv) {
   await chatStore.pin(conv.id)
   ElMessage.success(conv.pinned ? '已取消置顶' : '已置顶')
 }
 
+/** 切换会话归档状态 */
 async function handleArchive(conv) {
   await chatStore.archive(conv.id)
   ElMessage.success(conv.archived ? '已取消归档' : '已归档')
