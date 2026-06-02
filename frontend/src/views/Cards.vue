@@ -1,7 +1,7 @@
 <!--
   Cards 视图 — 知识卡片页
 
-  功能：展示知识卡片列表，支持标签筛选、删除
+  功能：展示知识卡片列表，支持标签筛选、编辑、删除
   卡片来源：从 AI 回复中点击「提取卡片」保存
 -->
 <script setup>
@@ -12,6 +12,11 @@ import { useCardsStore } from '../stores/cards'
 const cardsStore = useCardsStore()
 
 const filterTag = ref('')  // 当前筛选的标签（空表示全部）
+
+// 编辑状态
+const editingId = ref(null)    // 正在编辑的卡片 ID
+const editContent = ref('')    // 编辑中的内容
+const editTags = ref('')       // 编辑中的标签
 
 /** 根据标签关键词过滤卡片列表 */
 const filteredCards = computed(() => {
@@ -34,6 +39,26 @@ const allTags = computed(() => {
 })
 
 onMounted(() => cardsStore.loadCards())
+
+/** 开始编辑卡片 */
+function startEdit(card) {
+  editingId.value = card.id
+  editContent.value = card.content
+  editTags.value = card.tags || ''
+}
+
+/** 取消编辑 */
+function cancelEdit() {
+  editingId.value = null
+}
+
+/** 保存编辑 */
+async function saveEdit(card) {
+  const content = editContent.value.trim()
+  if (!content) return
+  await cardsStore.editCard(card.id, { content, tags: editTags.value.trim() || null })
+  editingId.value = null
+}
 
 /** 删除卡片（带确认弹窗） */
 async function handleDelete(card) {
@@ -96,15 +121,37 @@ function tagList(tags) {
 
     <div class="cards-grid">
       <div v-for="card in filteredCards" :key="card.id" class="card-item">
-        <div class="card-content">{{ card.content }}</div>
-        <div v-if="card.tags" class="card-tags">
-          <span v-for="tag in tagList(card.tags)" :key="tag" class="tag-chip">{{ tag }}</span>
-        </div>
-        <div class="card-footer">
-          <span v-if="card.source" class="card-source">{{ card.source }}</span>
-          <span class="card-time">{{ formatTime(card.created_at) }}</span>
-          <el-button text size="small" class="card-delete" @click="handleDelete(card)">删除</el-button>
-        </div>
+        <!-- 编辑模式 -->
+        <template v-if="editingId === card.id">
+          <textarea
+            v-model="editContent"
+            class="edit-textarea"
+            rows="4"
+            placeholder="卡片内容"
+          ></textarea>
+          <input
+            v-model="editTags"
+            class="edit-tags-input"
+            placeholder="标签（逗号分隔）"
+          />
+          <div class="edit-actions">
+            <el-button type="primary" size="small" @click="saveEdit(card)">保存</el-button>
+            <el-button size="small" @click="cancelEdit">取消</el-button>
+          </div>
+        </template>
+        <!-- 展示模式 -->
+        <template v-else>
+          <div class="card-content">{{ card.content }}</div>
+          <div v-if="card.tags" class="card-tags">
+            <span v-for="tag in tagList(card.tags)" :key="tag" class="tag-chip">{{ tag }}</span>
+          </div>
+          <div class="card-footer">
+            <span v-if="card.source" class="card-source">{{ card.source }}</span>
+            <span class="card-time">{{ formatTime(card.created_at) }}</span>
+            <el-button text size="small" class="card-edit" @click="startEdit(card)">编辑</el-button>
+            <el-button text size="small" class="card-delete" @click="handleDelete(card)">删除</el-button>
+          </div>
+        </template>
       </div>
     </div>
   </div>
@@ -208,6 +255,17 @@ function tagList(tags) {
   white-space: nowrap;
 }
 
+.card-edit {
+  font-size: 12px;
+  color: var(--text-muted);
+  padding: 2px 6px;
+  height: auto;
+}
+
+.card-edit:hover {
+  color: var(--accent);
+}
+
 .card-delete {
   font-size: 12px;
   color: var(--text-muted);
@@ -217,6 +275,46 @@ function tagList(tags) {
 
 .card-delete:hover {
   color: var(--danger);
+}
+
+.edit-textarea {
+  width: 100%;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: 14px;
+  line-height: 1.7;
+  padding: 8px 12px;
+  resize: vertical;
+  outline: none;
+  font-family: inherit;
+  margin-bottom: 8px;
+}
+
+.edit-textarea:focus {
+  border-color: var(--accent);
+}
+
+.edit-tags-input {
+  width: 100%;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: 13px;
+  padding: 6px 12px;
+  outline: none;
+  margin-bottom: 8px;
+}
+
+.edit-tags-input:focus {
+  border-color: var(--accent);
+}
+
+.edit-actions {
+  display: flex;
+  gap: 8px;
 }
 
 @media (max-width: 768px) {

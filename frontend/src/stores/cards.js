@@ -7,7 +7,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { ElMessage } from 'element-plus'
-import { createCard, getCards, deleteCard } from '../api/cards'
+import { createCard, getCards, updateCard, deleteCard } from '../api/cards'
 
 export const useCardsStore = defineStore('cards', () => {
   const cards = ref([])      // 知识卡片列表
@@ -32,6 +32,15 @@ export const useCardsStore = defineStore('cards', () => {
     return data
   }
 
+  /** 更新知识卡片内容和标签 */
+  async function editCard(cardId, updates) {
+    const { data } = await updateCard(cardId, updates)
+    const idx = cards.value.findIndex(c => c.id === cardId)
+    if (idx !== -1) cards.value[idx] = data
+    ElMessage.success('卡片已更新')
+    return data
+  }
+
   /** 删除知识卡片并从列表中移除 */
   async function removeCard(cardId) {
     await deleteCard(cardId)
@@ -39,5 +48,5 @@ export const useCardsStore = defineStore('cards', () => {
     ElMessage.success('卡片已删除')
   }
 
-  return { cards, loading, loadCards, addCard, removeCard }
+  return { cards, loading, loadCards, addCard, editCard, removeCard }
 })

@@ -66,6 +66,12 @@ class KnowledgeCardCreate(BaseModel):
     tags: str | None = None           # 逗号分隔的标签
 
 
+class KnowledgeCardUpdate(BaseModel):
+    """更新知识卡片请求体（所有字段可选）"""
+    content: str | None = Field(None, min_length=1)
+    tags: str | None = None
+
+
 class KnowledgeCardResponse(BaseModel):
     """知识卡片响应体"""
     id: int

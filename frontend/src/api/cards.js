@@ -1,7 +1,7 @@
 /**
  * 知识卡片 API 模块
  *
- * 封装知识卡片的创建、查询和删除请求。
+ * 封装知识卡片的创建、查询、编辑和删除请求。
  */
 
 import api from './index'
@@ -14,6 +14,11 @@ export function createCard(data) {
 /** 获取当前用户的知识卡片列表 */
 export function getCards() {
   return api.get('/cards')
+}
+
+/** 更新知识卡片内容和标签 */
+export function updateCard(cardId, data) {
+  return api.put(`/cards/${cardId}`, data)
 }
 
 /** 删除知识卡片 */

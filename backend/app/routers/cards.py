@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.conversation import KnowledgeCard
 from app.models.user import User
-from app.schemas.conversation import KnowledgeCardCreate, KnowledgeCardResponse
+from app.schemas.conversation import KnowledgeCardCreate, KnowledgeCardUpdate, KnowledgeCardResponse
 from app.utils.security import get_current_user
 
 router = APIRouter(prefix="/cards", tags=["知识卡片"])
@@ -40,6 +40,24 @@ def list_cards(user: User = Depends(get_current_user), db: Session = Depends(get
         .order_by(KnowledgeCard.created_at.desc())
         .all()
     )
+
+
+@router.put("/{card_id}", response_model=KnowledgeCardResponse)
+def update_card(card_id: int, data: KnowledgeCardUpdate, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """更新知识卡片内容和标签（仅更新非空字段）"""
+    card = db.query(KnowledgeCard).filter(
+        KnowledgeCard.id == card_id,
+        KnowledgeCard.user_id == user.id,
+    ).first()
+    if not card:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="卡片不存在")
+    if data.content is not None:
+        card.content = data.content
+    if data.tags is not None:
+        card.tags = data.tags
+    db.commit()
+    db.refresh(card)
+    return card
 
 
 @router.delete("/{card_id}")
