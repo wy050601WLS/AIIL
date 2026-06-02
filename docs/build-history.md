@@ -409,3 +409,64 @@ AIIL/
 - api/dashboard.js + stores/dashboard.js
 - views/Dashboard.vue：统计卡片（4 宫格）、30 天柱状图（纯 CSS）、热门标签
 - 路由 /dashboard，Sidebar 底栏新增「面板」入口
+
+---
+
+## 阶段十五：UI 优化
+
+全面优化界面交互和视觉体验。
+
+### N-1：侧边栏底栏图标化
+- 底栏按钮从文字改为 SVG 图标（面板、卡片、主题切换、设置、退出）
+- 深色/浅色主题切换按钮显示太阳/月亮图标
+- 新对话按钮改为实心 primary 样式
+
+### N-2：会话操作下拉菜单
+- 会话项 hover 显示 ⋯ 按钮
+- 点击弹出 el-dropdown 菜单：重命名、置顶、归档、删除
+- 替代原来的一排内联操作按钮，解决布局拥挤问题
+
+### N-3：清理重复内容
+- 移除 Chat.vue 中重复的欢迎副标题
+- 移除侧边栏多余的文字标签
+
+---
+
+## 阶段十六：移除系统提示词功能
+
+彻底移除每个会话自定义系统提示词的功能，统一使用配置文件中的默认提示词。
+
+### O-1：后端清理
+- 移除 `conversations.system_prompt` 相关逻辑（保留数据库列，不破坏现有数据）
+- 移除 `update_system_prompt` 服务函数
+- 移除 `PUT /conversations/{id}/prompt` 路由端点
+- 移除 `SystemPromptUpdate` schema
+- ai_service 统一使用 `settings.DEFAULT_SYSTEM_PROMPT`
+- 移除 `test_system_prompt` 测试用例
+
+### O-2：前端清理
+- 删除 `SystemPromptDialog.vue` 组件
+- Sidebar 移除提示词对话框相关逻辑和导入
+- chat store 移除 `updateSystemPrompt` 函数
+- chat API 移除 `updateSystemPrompt` 请求函数
+
+---
+
+## 阶段十七：项目全景文档
+
+创建 `docs/project-overview.md` 作为项目全景参考文档，供其他 AI 全面了解项目。
+
+### P-1：文档结构
+- 项目背景与定位（痛点分析、技术选型理由）
+- 功能清单（50+ 功能项，涵盖所有已实现特性）
+- 技术架构图（前端/后端/数据库/AI）
+- 数据库设计（ER 关系、4 张表结构）
+- API 接口一览（5 组路由、20+ 端点）
+- 前端路由与文件清单
+
+### P-2：深度分析
+- 核心实现模式（SSE 流式对话、认证流程、图片管线、状态管理、测试模式）
+- 技术债务（10 项已知问题）
+- 扩展方向（高/中/低价值分类）
+- 改进建议（P0/P1/P2 优先级）
+- 开发约定（后端分层、前端模式、Git 规范）
