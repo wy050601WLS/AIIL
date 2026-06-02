@@ -103,6 +103,12 @@ export const useChatStore = defineStore('chat', () => {
       await newConversation((content || '').slice(0, 20) || '图片对话')
     }
 
+    // 自动更新会话标题：若标题仍为「新对话」，用消息前 30 字更新（与后端同步）
+    const conv = conversations.value.find(c => c.id === currentId.value)
+    if (conv && conv.title === '新对话' && content) {
+      conv.title = content.slice(0, 30).replace(/\n/g, ' ').trim() || '图片对话'
+    }
+
     const hasImages = images && images.length > 0
     messages.value.push({
       role: 'user',

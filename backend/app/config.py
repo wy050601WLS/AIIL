@@ -34,7 +34,7 @@ class Settings:
     # ===== AI 模型配置 =====
     AI_API_KEY: str = os.getenv("AI_API_KEY", "")
     AI_BASE_URL: str = os.getenv("AI_BASE_URL", "https://token-plan-cn.xiaomimimo.com/anthropic")
-    AI_MODEL: str = os.getenv("AI_MODEL", "claude-sonnet-4-20250514")
+    AI_MODEL: str = os.getenv("AI_MODEL", "mimo-v2.5-pro")
 
     # ===== 默认系统提示词 =====
     # 所有会话统一使用此提示词，不再支持每个会话单独设置

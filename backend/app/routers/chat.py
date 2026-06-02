@@ -57,6 +57,14 @@ def chat(data: ChatRequest, user: User = Depends(get_current_user), db: Session 
     else:
         save_user_message(data.conversation_id, data.content, db, data.images)
 
+    # 自动更新会话标题：若标题仍为默认值「新对话」，用用户消息前 30 字更新
+    conv = db.query(Conversation).filter(Conversation.id == data.conversation_id).first()
+    if conv and conv.title == "新对话" and data.content and not data.regenerate:
+        conv.title = data.content[:30].replace("\n", " ").strip()
+        if not conv.title:
+            conv.title = "图片对话"
+        db.commit()
+
     history, conv = load_history(data.conversation_id, db)
     chunks, full_response = call_ai_api(history, model=data.model)
 
