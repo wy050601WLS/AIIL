@@ -104,3 +104,23 @@ class LearningResource(Base):
     resource_type = Column(String(20), nullable=True)                    # 类型（article/video/course/tool/book/other）
     tags = Column(String(500), nullable=True)                            # 标签，逗号分隔
     created_at = Column(DateTime, default=datetime.now)
+
+
+class KnowledgeDocument(Base):
+    """知识库文档表模型
+
+    用户上传的学习文档（PDF/DOCX/TXT/MD），系统自动解析文件内容并存储。
+    支持全文搜索和标签管理。
+    """
+
+    __tablename__ = "knowledge_documents"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    title = Column(String(200), nullable=False)                          # 文档标题（默认取文件名）
+    file_type = Column(String(10), nullable=False)                       # 文件类型：pdf/docx/txt/md
+    file_path = Column(String(500), nullable=False)                      # 磁盘存储路径
+    file_size = Column(Integer, nullable=True)                           # 文件大小（字节）
+    content_text = Column(Text, nullable=True)                           # 解析后的纯文本内容
+    tags = Column(String(500), nullable=True)                            # 标签，逗号分隔
+    created_at = Column(DateTime, default=datetime.now)

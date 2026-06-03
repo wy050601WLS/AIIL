@@ -146,6 +146,17 @@ GitHub：https://github.com/wy050601WLS/AIIL.git
 | 资料编辑 | 支持修改资料的所有字段 |
 | 外链跳转 | 有链接的资料可直接点击打开 |
 
+### 知识库
+
+| 功能 | 说明 |
+|------|------|
+| 文档上传 | 支持 PDF、DOCX、TXT、MD 文件上传 |
+| 内容解析 | 自动提取文档纯文本内容（PDF/DOCX/TXT/MD） |
+| 全文搜索 | 按标题和标签关键词搜索文档 |
+| 文档详情 | 查看完整文档内容 |
+| 标签管理 | 支持编辑文档标题和标签 |
+| 文件管理 | 删除文档时同时清理磁盘文件 |
+
 ### 用户系统
 
 | 功能 | 说明 |
@@ -355,6 +366,16 @@ users 1──n knowledge_cards
 | DELETE | /resources/{id} | 删除资料 | ✓ |
 | POST | /resources/ask | AI 辅助搜索（自然语言提问） | ✓ |
 
+### 知识库 `/knowledge`
+
+| 方法 | 路径 | 说明 | 认证 |
+|------|------|------|------|
+| POST | /knowledge/upload | 上传文档（multipart/form-data） | ✓ |
+| GET | /knowledge | 文档列表（支持 keyword 搜索） | ✓ |
+| GET | /knowledge/{id} | 文档详情（含全文内容） | ✓ |
+| PUT | /knowledge/{id} | 更新标题/标签 | ✓ |
+| DELETE | /knowledge/{id} | 删除文档（磁盘文件+数据库） | ✓ |
+
 ---
 
 ## 六、前端路由
@@ -404,18 +425,20 @@ app/
 ├── main.py                # FastAPI 入口，挂载中间件和路由
 ├── models/
 │   ├── user.py            # User 模型
-│   └── conversation.py    # Conversation / Message / KnowledgeCard 模型
+│   └── conversation.py    # Conversation / Message / KnowledgeCard / KnowledgeDocument 模型
 ├── schemas/
 │   ├── user.py            # 用户相关 Pydantic 模型
-│   └── conversation.py    # 对话/消息/卡片/面板 Pydantic 模型
+│   └── conversation.py    # 对话/消息/卡片/面板/知识库 Pydantic 模型
 ├── routers/
 │   ├── auth.py            # 认证路由（注册/登录/资料/密码）
 │   ├── history.py         # 会话管理路由（CRUD/置顶/归档）
 │   ├── chat.py            # AI 对话路由（SSE/导出/模型/消息编辑）
 │   ├── cards.py           # 知识卡片路由（增删查）
-│   └── dashboard.py       # 学习面板路由（统计）
+│   ├── dashboard.py       # 学习面板路由（统计）
+│   └── knowledge.py       # 知识库路由（上传/列表/详情/删除）
 ├── services/
 │   ├── ai_service.py      # AI 调用、消息存储、历史加载（多模态）
+│   ├── document_parser.py # 文档解析（PDF/DOCX/TXT/MD）
 │   ├── auth_service.py    # 注册/登录/改密/更新资料
 │   └── chat_service.py    # 会话 CRUD 业务逻辑
 └── utils/
@@ -452,18 +475,20 @@ src/
 ├── App.vue                # 根组件：<router-view />
 ├── style.css              # 全局主题变量（深色/浅色）+ Element Plus 覆盖
 ├── router/
-│   └── index.js           # 6 条路由 + 导航守卫
+│   └── index.js           # 8 条路由 + 导航守卫
 ├── api/
 │   ├── index.js           # Axios 实例（拦截器/token/401）
 │   ├── auth.js            # 认证 API
 │   ├── chat.js            # 对话 API + streamChat SSE
 │   ├── cards.js           # 知识卡片 API
-│   └── dashboard.js       # 学习面板 API
+│   ├── dashboard.js       # 学习面板 API
+│   └── knowledge.js       # 知识库 API
 ├── stores/
 │   ├── user.js            # 用户状态（token/资料/偏好）
 │   ├── chat.js            # 对话状态（会话列表/消息/模型/流式）
 │   ├── cards.js           # 知识卡片状态
 │   ├── dashboard.js       # 面板统计数据
+│   ├── knowledge.js       # 知识库状态
 │   └── theme.js           # 主题切换（深色/浅色）
 ├── components/
 │   ├── Sidebar.vue        # 侧边栏（会话列表/搜索/导航/下拉菜单）
@@ -475,7 +500,9 @@ src/
     ├── Chat.vue           # 主对话页
     ├── Settings.vue       # 设置页（资料/偏好/密码）
     ├── Cards.vue          # 知识卡片页
-    └── Dashboard.vue      # 学习面板页
+    ├── Dashboard.vue      # 学习面板页
+    ├── Knowledge.vue      # 知识库文档列表页
+    └── KnowledgeDetail.vue # 知识库文档详情页
 ```
 
 ### 配置与部署

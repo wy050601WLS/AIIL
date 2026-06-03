@@ -596,3 +596,27 @@ AIIL/
 - 新增/编辑对话框：el-form 表单，支持标题/链接/描述/分类/类型/标签
 - Sidebar.vue 新增「学习资料」导航入口（书本图标）
 - router/index.js 新增 /resources 路由
+
+---
+
+## 阶段二十五：知识库功能
+
+新增个人知识库功能，支持上传学习文档（PDF/DOCX/TXT/MD），系统自动解析文件内容并存储，支持全文搜索和标签管理。
+
+### X-1：后端文档上传与解析
+- 新增 KnowledgeDocument 模型（knowledge_documents 表），支持标题/文件类型/文件路径/文件大小/解析内容/标签
+- 新增 document_parser.py 解析服务：PDF（pypdf）、DOCX（python-docx）、TXT/MD（直接读取）
+- config.py 新增 UPLOAD_DIR 和 MAX_FILE_SIZE 配置
+- requirements.txt 新增 pypdf、python-docx 依赖
+
+### X-2：后端知识库路由
+- 新增 /knowledge 路由：POST /upload（multipart 文件上传）、GET（列表，支持关键词搜索）、GET /{id}（详情）、PUT /{id}（更新标题/标签）、DELETE /{id}（删除文档+磁盘文件）
+- main.py 注册 knowledge 路由
+- init_db.sql 新增 knowledge_documents 表 DDL
+
+### X-3：前端知识库页面
+- 新增 api/knowledge.js 和 stores/knowledge.js
+- 新增 Knowledge.vue：文档列表页，支持上传文件、关键词搜索、删除
+- 新增 KnowledgeDetail.vue：文档详情页，展示全文内容，支持编辑标题/标签
+- router/index.js 新增 /knowledge 和 /knowledge/:id 路由
+- Sidebar.vue 新增「知识库」导航入口（文档图标）

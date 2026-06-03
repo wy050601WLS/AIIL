@@ -20,6 +20,8 @@ const routes = [
   { path: '/cards', name: 'Cards', component: () => import('../views/Cards.vue'), meta: { auth: true } },
   { path: '/dashboard', name: 'Dashboard', component: () => import('../views/Dashboard.vue'), meta: { auth: true } },
   { path: '/resources', name: 'Resources', component: () => import('../views/Resources.vue'), meta: { auth: true } },
+  { path: '/knowledge', name: 'Knowledge', component: () => import('../views/Knowledge.vue'), meta: { auth: true } },
+  { path: '/knowledge/:id', name: 'KnowledgeDetail', component: () => import('../views/KnowledgeDetail.vue'), meta: { auth: true } },
 ]
 
 const router = createRouter({

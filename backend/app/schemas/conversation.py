@@ -152,6 +152,27 @@ class ResourceAskRequest(BaseModel):
     question: str = Field(..., min_length=1)
 
 
+# ===== 知识库文档相关 =====
+
+class DocumentResponse(BaseModel):
+    """知识库文档响应体"""
+    id: int
+    title: str
+    file_type: str
+    file_size: int | None = None
+    content_text: str | None = None
+    tags: str | None = None
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class DocumentUpdate(BaseModel):
+    """更新知识库文档请求体（所有字段可选）"""
+    title: str | None = Field(None, min_length=1, max_length=200)
+    tags: str | None = None
+
+
 # ===== 学习面板相关 =====
 
 class DailyMessage(BaseModel):
