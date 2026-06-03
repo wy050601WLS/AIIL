@@ -44,8 +44,8 @@ def list_resources(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """获取当前用户的学习资料列表，支持按分类和类型过滤"""
-    query = db.query(LearningResource).filter(LearningResource.user_id == user.id)
+    """获取所有用户的学习资料列表，支持按分类和类型过滤"""
+    query = db.query(LearningResource)
     if category:
         query = query.filter(LearningResource.category == category)
     if resource_type:
@@ -99,10 +99,9 @@ def ask_resources(data: ResourceAskRequest, user: User = Depends(get_current_use
 
     将用户的问题和所有资料的标题/描述发送给 AI，让 AI 分析哪些资料与问题相关并给出建议。
     """
-    # 加载用户的所有资料
+    # 加载所有资料
     resources = (
         db.query(LearningResource)
-        .filter(LearningResource.user_id == user.id)
         .order_by(LearningResource.created_at.desc())
         .all()
     )

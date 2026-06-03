@@ -84,8 +84,8 @@ def list_documents(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """获取当前用户的文档列表，支持关键词搜索标题和内容"""
-    query = db.query(KnowledgeDocument).filter(KnowledgeDocument.user_id == user.id)
+    """获取所有用户的文档列表，支持关键词搜索标题和标签"""
+    query = db.query(KnowledgeDocument)
     if keyword and keyword.strip():
         q = f"%{keyword.strip()}%"
         query = query.filter(
@@ -97,10 +97,7 @@ def list_documents(
 @router.get("/{doc_id}", response_model=DocumentResponse)
 def get_document(doc_id: int, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """获取文档详情（含全文内容）"""
-    doc = db.query(KnowledgeDocument).filter(
-        KnowledgeDocument.id == doc_id,
-        KnowledgeDocument.user_id == user.id,
-    ).first()
+    doc = db.query(KnowledgeDocument).filter(KnowledgeDocument.id == doc_id).first()
     if not doc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="文档不存在")
     return doc
