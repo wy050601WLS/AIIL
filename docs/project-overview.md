@@ -146,7 +146,7 @@ GitHub：https://github.com/wy050601WLS/AIIL.git
 | 资料编辑 | 支持修改资料的所有字段 |
 | 外链跳转 | 有链接的资料可直接点击打开 |
 
-### 知识库
+### 知识库（与学习资料合并展示）
 
 | 功能 | 说明 |
 |------|------|
@@ -156,6 +156,7 @@ GitHub：https://github.com/wy050601WLS/AIIL.git
 | 文档详情 | 查看完整文档内容 |
 | 标签管理 | 支持编辑文档标题和标签 |
 | 文件管理 | 删除文档时同时清理磁盘文件 |
+| Tab 切换 | 与学习资料合并为一个页面，通过 Tab 切换 |
 
 ### 用户系统
 
@@ -388,7 +389,8 @@ users 1──n knowledge_cards
 | /settings | Settings | ✓ | 个人设置 |
 | /cards | Cards | ✓ | 知识卡片 |
 | /dashboard | Dashboard | ✓ | 学习面板 |
-| /resources | Resources | ✓ | 学习资料库 |
+| /resources | Resources | ✓ | 学习资料 + 知识库（Tab 切换） |
+| /knowledge/:id | KnowledgeDetail | ✓ | 知识库文档详情 |
 
 ---
 

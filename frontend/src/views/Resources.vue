@@ -1,21 +1,29 @@
 <!--
-  Resources 视图 — 学习资料库页
+  Resources 视图 — 学习资料与知识库页
 
-  功能：展示学习资料列表，支持分类/类型筛选、关键词搜索、AI 辅助查找、增删改
+  功能：Tab 切换展示学习资料（链接/元数据）和知识库文档（上传文件）
+  Tab 1: 学习资料 — AI 搜索、分类/类型筛选、增删改
+  Tab 2: 知识库文档 — 上传文件、搜索、查看文档详情
 -->
 <script setup>
 import { computed, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessageBox, ElMessage } from 'element-plus'
 import { useResourcesStore } from '../stores/resources'
+import { useKnowledgeStore } from '../stores/knowledge'
 
 const resourcesStore = useResourcesStore()
+const knowledgeStore = useKnowledgeStore()
+const router = useRouter()
 
+const activeTab = ref('resources')
+
+// ===== 学习资料相关 =====
 const filterCategory = ref('')
 const filterType = ref('')
 const filterKeyword = ref('')
 const askQuestion = ref('')
 
-// 新增/编辑对话框状态
 const dialogVisible = ref(false)
 const editingId = ref(null)
 const form = ref({ title: '', url: '', description: '', category: '', resource_type: '', tags: '' })
@@ -45,8 +53,22 @@ const filteredResources = computed(() => {
   return list
 })
 
-onMounted(() => resourcesStore.loadResources())
+// ===== 知识库相关 =====
+const searchKeyword = ref('')
+const uploadDialogVisible = ref(false)
+const uploadTitle = ref('')
+const uploadTags = ref('')
+const selectedFile = ref(null)
 
+const fileTypeIcons = { pdf: '📄', docx: '📝', txt: '📃', md: '📑' }
+const fileTypeLabels = { pdf: 'PDF', docx: 'Word', txt: '文本', md: 'Markdown' }
+
+onMounted(() => {
+  resourcesStore.loadResources()
+  knowledgeStore.loadDocuments()
+})
+
+// ===== 学习资料操作 =====
 function openAddDialog() {
   editingId.value = null
   form.value = { title: '', url: '', description: '', category: '', resource_type: '', tags: '' }
@@ -87,7 +109,7 @@ async function handleSave() {
   dialogVisible.value = false
 }
 
-async function handleDelete(resource) {
+async function handleDeleteResource(resource) {
   try {
     await ElMessageBox.confirm('确定删除这条学习资料？', '删除资料', {
       confirmButtonText: '删除',
@@ -95,9 +117,7 @@ async function handleDelete(resource) {
       type: 'warning',
     })
     await resourcesStore.removeResource(resource.id)
-  } catch {
-    // 用户取消
-  }
+  } catch {}
 }
 
 async function handleAsk() {
@@ -112,6 +132,64 @@ function clearFilters() {
   filterKeyword.value = ''
 }
 
+// ===== 知识库操作 =====
+function handleSearch() {
+  knowledgeStore.loadDocuments(searchKeyword.value.trim() || undefined)
+}
+
+function clearSearch() {
+  searchKeyword.value = ''
+  knowledgeStore.loadDocuments()
+}
+
+function openUploadDialog() {
+  selectedFile.value = null
+  uploadTitle.value = ''
+  uploadTags.value = ''
+  uploadDialogVisible.value = true
+}
+
+function handleFileChange(e) {
+  const file = e.target.files?.[0]
+  if (file) {
+    selectedFile.value = file
+    if (!uploadTitle.value) {
+      uploadTitle.value = file.name.replace(/\.[^.]+$/, '')
+    }
+  }
+}
+
+async function handleUpload() {
+  if (!selectedFile.value) {
+    ElMessage.warning('请选择文件')
+    return
+  }
+  const doc = await knowledgeStore.addDocument(
+    selectedFile.value,
+    uploadTitle.value.trim() || undefined,
+    uploadTags.value.trim() || undefined,
+  )
+  if (doc) {
+    uploadDialogVisible.value = false
+  }
+}
+
+function goToDetail(id) {
+  router.push(`/knowledge/${id}`)
+}
+
+async function handleDeleteDoc(doc) {
+  try {
+    await ElMessageBox.confirm(`确定删除文档「${doc.title}」？`, '删除文档', {
+      confirmButtonText: '删除',
+      cancelButtonText: '取消',
+      type: 'warning',
+    })
+    await knowledgeStore.removeDocument(doc.id)
+  } catch {}
+}
+
+// ===== 通用工具 =====
 function formatTime(dateStr) {
   if (!dateStr) return ''
   const d = new Date(dateStr)
@@ -127,111 +205,190 @@ function typeLabel(type) {
   const found = types.find(t => t.value === type)
   return found ? found.label : type
 }
+
+function formatSize(bytes) {
+  if (!bytes) return ''
+  if (bytes < 1024) return bytes + ' B'
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
+  return (bytes / 1024 / 1024).toFixed(1) + ' MB'
+}
 </script>
 
 <template>
   <div class="resources-page">
     <div class="resources-header">
-      <h1>学习资料库</h1>
-      <p class="subtitle">收集和管理学习资料，AI 帮你快速查找</p>
+      <h1>学习资料</h1>
+      <p class="subtitle">收集学习资料，上传文档，AI 帮你快速查找</p>
     </div>
 
-    <!-- AI 搜索区 -->
-    <div class="ai-search-section">
-      <div class="ai-search-input">
+    <!-- Tab 切换 -->
+    <div class="tab-bar">
+      <button class="tab-btn" :class="{ active: activeTab === 'resources' }" @click="activeTab = 'resources'">
+        学习资料
+      </button>
+      <button class="tab-btn" :class="{ active: activeTab === 'knowledge' }" @click="activeTab = 'knowledge'">
+        知识库文档
+      </button>
+    </div>
+
+    <!-- ===== Tab 1: 学习资料 ===== -->
+    <template v-if="activeTab === 'resources'">
+      <!-- AI 搜索区 -->
+      <div class="ai-search-section">
+        <div class="ai-search-input">
+          <input
+            v-model="askQuestion"
+            class="ask-input"
+            placeholder="问问 AI：我有哪些编程相关的资料？"
+            @keydown.enter="handleAsk"
+          />
+          <el-button type="primary" :loading="resourcesStore.asking" @click="handleAsk">AI 搜索</el-button>
+        </div>
+        <div v-if="resourcesStore.aiAnswer" class="ai-answer">
+          <div class="ai-answer-label">AI 分析</div>
+          <div class="ai-answer-text">{{ resourcesStore.aiAnswer }}</div>
+          <el-button text size="small" @click="resourcesStore.clearAiResults()">收起</el-button>
+        </div>
+      </div>
+
+      <!-- 筛选栏 -->
+      <div class="filter-bar">
+        <el-select v-model="filterCategory" placeholder="分类" size="small" clearable style="width: 120px;">
+          <el-option v-for="cat in categories" :key="cat" :label="cat" :value="cat" />
+        </el-select>
+        <el-select v-model="filterType" placeholder="类型" size="small" clearable style="width: 120px;">
+          <el-option v-for="t in types" :key="t.value" :label="t.label" :value="t.value" />
+        </el-select>
+        <input v-model="filterKeyword" class="keyword-input" placeholder="搜索标题/描述/标签" />
+        <el-button text size="small" @click="clearFilters">重置</el-button>
+        <div class="filter-spacer"></div>
+        <el-button type="primary" size="small" @click="openAddDialog">+ 添加资料</el-button>
+      </div>
+
+      <!-- 资料列表 -->
+      <div v-if="resourcesStore.loading && resourcesStore.resources.length === 0" class="empty">加载中...</div>
+      <div v-else-if="filteredResources.length === 0" class="empty">
+        {{ filterCategory || filterType || filterKeyword ? '没有匹配的资料' : '还没有学习资料，点击上方「+ 添加资料」开始收集' }}
+      </div>
+
+      <div class="resources-grid">
+        <div v-for="resource in filteredResources" :key="resource.id" class="resource-item">
+          <div class="resource-header-row">
+            <span class="resource-title">
+              <a v-if="resource.url" :href="resource.url" target="_blank" rel="noopener">{{ resource.title }}</a>
+              <span v-else>{{ resource.title }}</span>
+            </span>
+            <span v-if="resource.resource_type" class="resource-type-badge">{{ typeLabel(resource.resource_type) }}</span>
+          </div>
+          <div v-if="resource.description" class="resource-desc">{{ resource.description }}</div>
+          <div class="resource-meta">
+            <span v-if="resource.category" class="resource-category">{{ resource.category }}</span>
+            <span v-for="tag in tagList(resource.tags)" :key="tag" class="tag-chip">{{ tag }}</span>
+          </div>
+          <div class="resource-footer">
+            <span class="resource-time">{{ formatTime(resource.created_at) }}</span>
+            <el-button text size="small" class="resource-edit" @click="openEditDialog(resource)">编辑</el-button>
+            <el-button text size="small" class="resource-delete" @click="handleDeleteResource(resource)">删除</el-button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 新增/编辑对话框 -->
+      <el-dialog v-model="dialogVisible" :title="editingId ? '编辑资料' : '添加资料'" width="500px" append-to-body>
+        <el-form label-width="60px">
+          <el-form-item label="标题">
+            <el-input v-model="form.title" placeholder="资料标题" maxlength="200" />
+          </el-form-item>
+          <el-form-item label="链接">
+            <el-input v-model="form.url" placeholder="https://...（可选）" maxlength="500" />
+          </el-form-item>
+          <el-form-item label="描述">
+            <el-input v-model="form.description" type="textarea" :rows="3" placeholder="资料描述或学习笔记" />
+          </el-form-item>
+          <el-form-item label="分类">
+            <el-select v-model="form.category" placeholder="选择分类" clearable style="width: 100%;">
+              <el-option v-for="cat in categories" :key="cat" :label="cat" :value="cat" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="类型">
+            <el-select v-model="form.resource_type" placeholder="选择类型" clearable style="width: 100%;">
+              <el-option v-for="t in types" :key="t.value" :label="t.label" :value="t.value" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="标签">
+            <el-input v-model="form.tags" placeholder="标签（逗号分隔）" maxlength="500" />
+          </el-form-item>
+        </el-form>
+        <template #footer>
+          <el-button @click="dialogVisible = false">取消</el-button>
+          <el-button type="primary" @click="handleSave">保存</el-button>
+        </template>
+      </el-dialog>
+    </template>
+
+    <!-- ===== Tab 2: 知识库文档 ===== -->
+    <template v-if="activeTab === 'knowledge'">
+      <!-- 搜索栏 -->
+      <div class="search-bar">
         <input
-          v-model="askQuestion"
-          class="ask-input"
-          placeholder="问问 AI：我有哪些编程相关的资料？"
-          @keydown.enter="handleAsk"
+          v-model="searchKeyword"
+          class="search-input"
+          placeholder="搜索文档标题或标签..."
+          @keydown.enter="handleSearch"
         />
-        <el-button type="primary" :loading="resourcesStore.asking" @click="handleAsk">AI 搜索</el-button>
+        <el-button @click="handleSearch">搜索</el-button>
+        <el-button text @click="clearSearch">重置</el-button>
+        <div class="search-spacer"></div>
+        <el-button type="primary" @click="openUploadDialog">+ 上传文档</el-button>
       </div>
-      <div v-if="resourcesStore.aiAnswer" class="ai-answer">
-        <div class="ai-answer-label">AI 分析</div>
-        <div class="ai-answer-text">{{ resourcesStore.aiAnswer }}</div>
-        <el-button text size="small" @click="resourcesStore.clearAiResults()">收起</el-button>
+
+      <!-- 文档列表 -->
+      <div v-if="knowledgeStore.loading && knowledgeStore.documents.length === 0" class="empty">加载中...</div>
+      <div v-else-if="knowledgeStore.documents.length === 0" class="empty">
+        {{ searchKeyword ? '没有匹配的文档' : '还没有文档，点击上方「+ 上传文档」开始' }}
       </div>
-    </div>
 
-    <!-- 筛选栏 -->
-    <div class="filter-bar">
-      <el-select v-model="filterCategory" placeholder="分类" size="small" clearable style="width: 120px;">
-        <el-option v-for="cat in categories" :key="cat" :label="cat" :value="cat" />
-      </el-select>
-      <el-select v-model="filterType" placeholder="类型" size="small" clearable style="width: 120px;">
-        <el-option v-for="t in types" :key="t.value" :label="t.label" :value="t.value" />
-      </el-select>
-      <input v-model="filterKeyword" class="keyword-input" placeholder="搜索标题/描述/标签" />
-      <el-button text size="small" @click="clearFilters">重置</el-button>
-      <div class="filter-spacer"></div>
-      <el-button type="primary" size="small" @click="openAddDialog">+ 添加资料</el-button>
-    </div>
-
-    <!-- 列表 -->
-    <div v-if="resourcesStore.loading && resourcesStore.resources.length === 0" class="empty">加载中...</div>
-    <div v-else-if="filteredResources.length === 0" class="empty">
-      {{ filterCategory || filterType || filterKeyword ? '没有匹配的资料' : '还没有学习资料，点击上方「+ 添加资料」开始收集' }}
-    </div>
-
-    <div class="resources-grid">
-      <div v-for="resource in filteredResources" :key="resource.id" class="resource-item">
-        <div class="resource-header-row">
-          <span class="resource-title">
-            <a v-if="resource.url" :href="resource.url" target="_blank" rel="noopener">{{ resource.title }}</a>
-            <span v-else>{{ resource.title }}</span>
-          </span>
-          <span v-if="resource.resource_type" class="resource-type-badge">{{ typeLabel(resource.resource_type) }}</span>
-        </div>
-        <div v-if="resource.description" class="resource-desc">{{ resource.description }}</div>
-        <div class="resource-meta">
-          <span v-if="resource.category" class="resource-category">{{ resource.category }}</span>
-          <span v-for="tag in tagList(resource.tags)" :key="tag" class="tag-chip">{{ tag }}</span>
-        </div>
-        <div class="resource-footer">
-          <span class="resource-time">{{ formatTime(resource.created_at) }}</span>
-          <el-button text size="small" class="resource-edit" @click="openEditDialog(resource)">编辑</el-button>
-          <el-button text size="small" class="resource-delete" @click="handleDelete(resource)">删除</el-button>
+      <div class="resources-grid">
+        <div v-for="doc in knowledgeStore.documents" :key="doc.id" class="resource-item doc-clickable" @click="goToDetail(doc.id)">
+          <div class="resource-header-row">
+            <span class="doc-icon">{{ fileTypeIcons[doc.file_type] || '📄' }}</span>
+            <span class="resource-title">{{ doc.title }}</span>
+            <span class="resource-type-badge">{{ fileTypeLabels[doc.file_type] || doc.file_type }}</span>
+          </div>
+          <div v-if="doc.content_text" class="resource-desc doc-preview">{{ doc.content_text.slice(0, 120) }}...</div>
+          <div v-if="doc.tags" class="resource-meta">
+            <span v-for="tag in tagList(doc.tags)" :key="tag" class="tag-chip">{{ tag }}</span>
+          </div>
+          <div class="resource-footer">
+            <span class="doc-size">{{ formatSize(doc.file_size) }}</span>
+            <span class="resource-time">{{ formatTime(doc.created_at) }}</span>
+            <el-button text size="small" class="resource-delete" @click.stop="handleDeleteDoc(doc)">删除</el-button>
+          </div>
         </div>
       </div>
-    </div>
 
-    <!-- 新增/编辑对话框 -->
-    <el-dialog
-      v-model="dialogVisible"
-      :title="editingId ? '编辑资料' : '添加资料'"
-      width="500px"
-      append-to-body
-    >
-      <el-form label-width="60px">
-        <el-form-item label="标题">
-          <el-input v-model="form.title" placeholder="资料标题" maxlength="200" />
-        </el-form-item>
-        <el-form-item label="链接">
-          <el-input v-model="form.url" placeholder="https://...（可选）" maxlength="500" />
-        </el-form-item>
-        <el-form-item label="描述">
-          <el-input v-model="form.description" type="textarea" :rows="3" placeholder="资料描述或学习笔记" />
-        </el-form-item>
-        <el-form-item label="分类">
-          <el-select v-model="form.category" placeholder="选择分类" clearable style="width: 100%;">
-            <el-option v-for="cat in categories" :key="cat" :label="cat" :value="cat" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="类型">
-          <el-select v-model="form.resource_type" placeholder="选择类型" clearable style="width: 100%;">
-            <el-option v-for="t in types" :key="t.value" :label="t.label" :value="t.value" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="标签">
-          <el-input v-model="form.tags" placeholder="标签（逗号分隔）" maxlength="500" />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="handleSave">保存</el-button>
-      </template>
-    </el-dialog>
+      <!-- 上传对话框 -->
+      <el-dialog v-model="uploadDialogVisible" title="上传文档" width="480px" append-to-body>
+        <el-form label-width="60px">
+          <el-form-item label="文件">
+            <input type="file" accept=".pdf,.docx,.txt,.md" @change="handleFileChange" />
+            <div v-if="selectedFile" class="file-info">
+              {{ selectedFile.name }} ({{ formatSize(selectedFile.size) }})
+            </div>
+          </el-form-item>
+          <el-form-item label="标题">
+            <el-input v-model="uploadTitle" placeholder="文档标题（默认取文件名）" maxlength="200" />
+          </el-form-item>
+          <el-form-item label="标签">
+            <el-input v-model="uploadTags" placeholder="标签（逗号分隔）" maxlength="500" />
+          </el-form-item>
+        </el-form>
+        <template #footer>
+          <el-button @click="uploadDialogVisible = false">取消</el-button>
+          <el-button type="primary" :loading="knowledgeStore.uploading" @click="handleUpload">上传</el-button>
+        </template>
+      </el-dialog>
+    </template>
   </div>
 </template>
 
@@ -254,7 +411,39 @@ function typeLabel(type) {
 .subtitle {
   font-size: 14px;
   color: var(--text-muted);
-  margin-bottom: 24px;
+  margin-bottom: 20px;
+}
+
+/* ===== Tab 切换 ===== */
+
+.tab-bar {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0;
+}
+
+.tab-btn {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text-muted);
+  font-size: 14px;
+  font-weight: 500;
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+  font-family: inherit;
+}
+
+.tab-btn:hover {
+  color: var(--text-primary);
+}
+
+.tab-btn.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
 }
 
 /* ===== AI 搜索 ===== */
@@ -347,7 +536,40 @@ function typeLabel(type) {
   flex: 1;
 }
 
-/* ===== 资料列表 ===== */
+/* ===== 搜索栏（知识库） ===== */
+
+.search-bar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.search-input {
+  flex: 1;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: 14px;
+  padding: 8px 14px;
+  outline: none;
+  font-family: inherit;
+}
+
+.search-input:focus {
+  border-color: var(--accent);
+}
+
+.search-input::placeholder {
+  color: var(--text-muted);
+}
+
+.search-spacer {
+  flex: 1;
+}
+
+/* ===== 列表通用 ===== */
 
 .empty {
   text-align: center;
@@ -374,11 +596,20 @@ function typeLabel(type) {
   box-shadow: var(--shadow);
 }
 
+.doc-clickable {
+  cursor: pointer;
+}
+
 .resource-header-row {
   display: flex;
   align-items: center;
   gap: 8px;
   margin-bottom: 6px;
+}
+
+.doc-icon {
+  font-size: 20px;
+  flex-shrink: 0;
 }
 
 .resource-title {
@@ -387,6 +618,9 @@ function typeLabel(type) {
   color: var(--text-primary);
   flex: 1;
   min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .resource-title a {
@@ -414,6 +648,14 @@ function typeLabel(type) {
   margin-bottom: 8px;
   white-space: pre-wrap;
   word-break: break-word;
+}
+
+.doc-preview {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  white-space: normal;
 }
 
 .resource-meta {
@@ -451,6 +693,10 @@ function typeLabel(type) {
   flex: 1;
 }
 
+.doc-size {
+  flex-shrink: 0;
+}
+
 .resource-edit {
   font-size: 12px;
   color: var(--text-muted);
@@ -473,21 +719,30 @@ function typeLabel(type) {
   color: var(--danger);
 }
 
+.file-info {
+  margin-top: 6px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
 @media (max-width: 768px) {
   .resources-page {
     padding: 20px 16px;
   }
 
-  .filter-bar {
+  .filter-bar,
+  .search-bar {
     flex-direction: column;
     align-items: stretch;
   }
 
-  .filter-spacer {
+  .filter-spacer,
+  .search-spacer {
     display: none;
   }
 
-  .keyword-input {
+  .keyword-input,
+  .search-input {
     min-width: auto;
   }
 }

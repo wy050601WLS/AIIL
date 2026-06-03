@@ -620,3 +620,17 @@ AIIL/
 - 新增 KnowledgeDetail.vue：文档详情页，展示全文内容，支持编辑标题/标签
 - router/index.js 新增 /knowledge 和 /knowledge/:id 路由
 - Sidebar.vue 新增「知识库」导航入口（文档图标）
+
+---
+
+## 阶段二十六：合并学习资料与知识库页面
+
+将独立的知识库页面合并到学习资料页面中，使用 Tab 切换展示两个模块。
+
+### Y-1：页面合并
+- Resources.vue 增加 Tab 切换（「学习资料」|「知识库文档」）
+- Tab 1 展示原有学习资料内容（AI 搜索 + 筛选 + 资料列表）
+- Tab 2 展示知识库文档内容（搜索 + 上传 + 文档列表）
+- 删除独立的 Knowledge.vue 页面
+- 路由移除 /knowledge，保留 /knowledge/:id 详情页
+- Sidebar 移除知识库独立导航按钮
