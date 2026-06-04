@@ -199,7 +199,10 @@ async function handleSaveCard(msg) {
               :key="m.id"
               :label="m.name"
               :value="m.id"
-            />
+            >
+              <span>{{ m.name }}</span>
+              <span v-if="m.vision" style="color: var(--accent); font-size: 11px; margin-left: 6px;">👁 视觉</span>
+            </el-option>
           </el-select>
         </div>
         <div class="header-right">

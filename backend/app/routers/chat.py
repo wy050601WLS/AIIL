@@ -126,9 +126,14 @@ def list_models():
     """返回可用的 AI 模型列表和默认模型 ID"""
     return {
         "models": [
-            {"id": "mimo-v2.5-pro", "name": "MiMo v2.5 Pro"},
+            {"id": "mimo-v2.5-pro", "name": "MiMo v2.5 Pro", "vision": False},
+            {"id": "gpt-4o", "name": "GPT-4o", "vision": True},
+            {"id": "gpt-4o-mini", "name": "GPT-4o Mini", "vision": True},
+            {"id": "claude-sonnet-4-20250514", "name": "Claude Sonnet 4", "vision": True},
+            {"id": "claude-haiku-4-5-20251001", "name": "Claude Haiku 4.5", "vision": True},
+            {"id": "gemini-2.0-flash", "name": "Gemini 2.0 Flash", "vision": True},
         ],
-        "default": "mimo-v2.5-pro",
+        "default": settings.AI_MODEL,
     }
 
 

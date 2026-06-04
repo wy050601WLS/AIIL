@@ -44,6 +44,12 @@ export const useChatStore = defineStore('chat', () => {
   /** 普通（非置顶）会话列表 */
   const normalConversations = computed(() => filteredConversations.value.filter(c => !c.pinned))
 
+  /** 当前模型是否支持视觉/图片识别 */
+  const currentModelSupportsVision = computed(() => {
+    const model = models.value.find(m => m.id === currentModel.value)
+    return model?.vision === true
+  })
+
   /** 加载可用的 AI 模型列表，首次加载时应用用户的默认模型偏好 */
   async function loadModels() {
     try {
@@ -313,7 +319,7 @@ export const useChatStore = defineStore('chat', () => {
   return {
     conversations, currentId, messages, loading, models, currentModel,
     showArchived, filteredConversations, pinnedConversations, normalConversations,
-    hasMore, loadingMore,
+    hasMore, loadingMore, currentModelSupportsVision,
     loadConversations, newConversation, selectConversation, sendMessage,
     loadMoreMessages,
     rename, remove, regenerate, stopStreaming, loadModels, setModel, exportCurrent,

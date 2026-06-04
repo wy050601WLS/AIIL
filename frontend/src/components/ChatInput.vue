@@ -7,8 +7,9 @@
 -->
 <script setup>
 import { ref, nextTick, onUnmounted, computed, onMounted } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { useTemplatesStore } from '../stores/templates'
+import { useChatStore } from '../stores/chat'
 
 defineProps({
   loading: { type: Boolean, default: false },
@@ -16,6 +17,7 @@ defineProps({
 
 const emit = defineEmits(['send', 'stop'])
 const templatesStore = useTemplatesStore()
+const chatStore = useChatStore()
 const input = ref('')               // 输入框文本
 const textareaRef = ref(null)       // textarea DOM 引用
 const fileInputRef = ref(null)      // 隐藏的 file input 引用
@@ -42,9 +44,21 @@ function autoResize() {
 }
 
 /** 发送消息：触发 send 事件并清空输入 */
-function handleSend() {
+async function handleSend() {
   const text = input.value.trim()
   if (!text && images.value.length === 0) return
+  // 如果有图片但当前模型不支持视觉，提示用户
+  if (images.value.length > 0 && !chatStore.currentModelSupportsVision) {
+    try {
+      await ElMessageBox.confirm(
+        `当前模型「${chatStore.currentModel}」不支持图片识别，图片将作为附件存储但 AI 不会分析。是否继续发送？`,
+        '模型不支持图片',
+        { confirmButtonText: '继续发送', cancelButtonText: '取消', type: 'warning' },
+      )
+    } catch {
+      return
+    }
+  }
   emit('send', { content: text, images: images.value.map(i => i.dataUrl) })
   input.value = ''
   images.value = []
