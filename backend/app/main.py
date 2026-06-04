@@ -21,12 +21,18 @@ app = FastAPI(title="AI 智慧学习系统")
 @app.on_event("startup")
 def init_builtin_templates():
     """启动时初始化内置模板，避免每次请求都检查"""
+    import logging
     from app.routers.templates import ensure_builtin_templates
-    db = SessionLocal()
+    logger = logging.getLogger(__name__)
     try:
-        ensure_builtin_templates(db)
-    finally:
-        db.close()
+        db = SessionLocal()
+        try:
+            ensure_builtin_templates(db)
+        finally:
+            db.close()
+    except Exception as e:
+        # BUG12: 数据库不可用时不影响启动，首次请求时会重新初始化
+        logger.warning(f"启动时初始化模板失败（数据库可能未就绪）: {e}")
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 

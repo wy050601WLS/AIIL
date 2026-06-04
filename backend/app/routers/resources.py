@@ -182,4 +182,8 @@ async def ask_resources(data: ResourceAskRequest, request: Request, user: User =
     except Exception:
         raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail="AI 服务暂时不可用，请稍后重试")
 
-    return {"answer": answer, "resources": [ResourceResponse.model_validate(r) for r in resources]}
+    # BUG6: 从 AI 回复中提取引用的资源 ID，只返回被推荐的资料
+    import re
+    referenced_ids = set(int(m) for m in re.findall(r'\[(\d+)\]', answer))
+    recommended = [r for r in resources if r.id in referenced_ids] if referenced_ids else resources[:5]
+    return {"answer": answer, "resources": [ResourceResponse.model_validate(r) for r in recommended]}

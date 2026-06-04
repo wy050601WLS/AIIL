@@ -121,6 +121,12 @@ async def stream_ai_api(history: list[dict], model: str | None = None):
 
     async with httpx.AsyncClient(timeout=120.0) as client:
         async with client.stream("POST", url, headers=headers, json=payload) as response:
+            # BUG9: 检查 HTTP 状态码，非 2xx 直接抛出异常
+            if response.status_code != 200:
+                error_body = ""
+                async for chunk in response.aiter_bytes():
+                    error_body += chunk.decode(errors="replace")
+                raise Exception(f"AI API 返回错误 (HTTP {response.status_code}): {error_body[:200]}")
             async for line in response.aiter_lines():
                 if not line or not line.startswith("data: "):
                     continue

@@ -60,6 +60,11 @@ def upload_document(
     # 解析文档内容
     content_text = parse_document(save_path, file_type)
 
+    # BUG4: 解析失败时清理文件并返回错误
+    if content_text is None:
+        os.remove(save_path)
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="文档解析失败，可能是扫描版 PDF 或文件已损坏")
+
     # 标题默认取文件名（去掉扩展名）
     doc_title = title.strip() if title else os.path.splitext(file.filename or "未命名")[0]
 
@@ -92,9 +97,11 @@ def list_documents(
         or_(KnowledgeDocument.visibility == "public", KnowledgeDocument.user_id == user.id)
     )
     if keyword and keyword.strip():
-        q = f"%{keyword.strip()}%"
+        # BUG8: 转义 LIKE 通配符，避免 % 和 _ 被当作通配符
+        escaped = keyword.strip().replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+        q = f"%{escaped}%"
         query = query.filter(
-            (KnowledgeDocument.title.like(q)) | (KnowledgeDocument.tags.like(q))
+            (KnowledgeDocument.title.like(q, escape="\\")) | (KnowledgeDocument.tags.like(q, escape="\\"))
         )
     return query.order_by(KnowledgeDocument.created_at.desc()).limit(200).all()
 

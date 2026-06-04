@@ -45,6 +45,12 @@ async def chat(data: ChatRequest, request: Request, user: User = Depends(get_cur
     """
     verify_conversation_owner(data.conversation_id, user, db)
 
+    # BUG5: 拦截空消息（无文字且无图片）
+    if not data.regenerate and not data.content.strip() and not data.images:
+        return StreamingResponse(iter(["data: [ERROR] 消息内容不能为空\n\n", "data: [DONE]\n\n"]), media_type="text/event-stream")
+
+    # BUG1: 重新生成时，暂存旧回复内容以便失败时恢复
+    old_message_content = None
     if data.regenerate:
         last_assistant = (
             db.query(Message)
@@ -53,6 +59,7 @@ async def chat(data: ChatRequest, request: Request, user: User = Depends(get_cur
             .first()
         )
         if last_assistant:
+            old_message_content = last_assistant.content
             db.delete(last_assistant)
             db.commit()
     else:
@@ -68,6 +75,9 @@ async def chat(data: ChatRequest, request: Request, user: User = Depends(get_cur
 
     history, conv = load_history(data.conversation_id, db)
 
+    # BUG2: 在生成器外预加载历史，避免 generator 中使用可能已关闭的注入 session
+    conversation_id = data.conversation_id
+
     async def generate():
         """真流式 SSE 生成器：收到 AI chunk 立即转发，流结束后存库"""
         full_response = ""
@@ -77,19 +87,28 @@ async def chat(data: ChatRequest, request: Request, user: User = Depends(get_cur
                 yield f"data: {chunk}\n\n"
         except Exception:
             yield "data: [ERROR] AI 服务暂时不可用，请稍后重试\n\n"
-        # 流结束后将完整回复存入数据库（使用独立 session 避免依赖注入的 session 已关闭）
-        if full_response:
-            save_db = SessionLocal()
-            try:
+        # 流结束后将完整回复存入数据库（使用独立 session）
+        save_db = SessionLocal()
+        try:
+            if full_response:
                 msg = Message(
-                    conversation_id=data.conversation_id,
+                    conversation_id=conversation_id,
                     role="assistant",
                     content=full_response,
                 )
                 save_db.add(msg)
                 save_db.commit()
-            finally:
-                save_db.close()
+            elif old_message_content:
+                # BUG1: 流式失败且无新内容，恢复旧回复
+                msg = Message(
+                    conversation_id=conversation_id,
+                    role="assistant",
+                    content=old_message_content,
+                )
+                save_db.add(msg)
+                save_db.commit()
+        finally:
+            save_db.close()
         yield "data: [DONE]\n\n"
 
     return StreamingResponse(generate(), media_type="text/event-stream")

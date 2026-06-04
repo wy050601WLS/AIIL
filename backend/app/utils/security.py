@@ -3,7 +3,7 @@
 提供密码哈希、JWT 令牌编解码、当前用户依赖注入等认证相关功能。
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from jose import JWTError, jwt
 import bcrypt
@@ -34,7 +34,7 @@ def create_access_token(user_id: int) -> str:
 
     Token 载荷包含 sub（用户 ID）和 exp（过期时间）。
     """
-    expire = datetime.now() + timedelta(hours=settings.JWT_EXPIRE_HOURS)
+    expire = datetime.now(timezone.utc) + timedelta(hours=settings.JWT_EXPIRE_HOURS)
     payload = {"sub": str(user_id), "exp": expire}
     return jwt.encode(payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
 
