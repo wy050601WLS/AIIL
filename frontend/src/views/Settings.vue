@@ -270,7 +270,7 @@ async function handleDeleteTemplate(tpl) {
   display: flex;
   align-items: flex-start;
   justify-content: center;
-  padding: 60px 20px;
+  padding: 60px var(--space-lg);
   background: var(--bg-primary);
 }
 
@@ -279,18 +279,18 @@ async function handleDeleteTemplate(tpl) {
   background: var(--bg-secondary);
   border-radius: var(--radius-xl);
   border: 1px solid var(--border);
-  padding: 32px;
+  padding: var(--space-xl);
 }
 
 .settings-header {
   display: flex;
   align-items: center;
-  gap: 16px;
-  margin-bottom: 32px;
+  gap: var(--space-md);
+  margin-bottom: var(--space-xl);
 }
 
 .settings-header h2 {
-  font-size: 20px;
+  font-size: var(--text-xl);
   color: var(--text-primary);
   margin: 0;
 }
@@ -300,28 +300,28 @@ async function handleDeleteTemplate(tpl) {
 }
 
 .settings-section {
-  margin-bottom: 32px;
+  margin-bottom: var(--space-xl);
 }
 
 .settings-section h3 {
-  font-size: 16px;
+  font-size: var(--text-lg);
   color: var(--text-primary);
-  margin-bottom: 16px;
-  padding-bottom: 8px;
+  margin-bottom: var(--space-md);
+  padding-bottom: var(--space-sm);
   border-bottom: 1px solid var(--border);
 }
 
 .info-row {
   color: var(--text-secondary);
-  font-size: 14px;
-  margin-bottom: 4px;
+  font-size: var(--text-base);
+  margin-bottom: var(--space-xs);
 }
 
 .avatar-picker {
   display: grid;
   grid-template-columns: repeat(8, 1fr);
-  gap: 8px;
-  margin-bottom: 16px;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-md);
 }
 
 .avatar-option {
@@ -348,7 +348,7 @@ async function handleDeleteTemplate(tpl) {
 }
 
 .save-btn {
-  margin-top: 12px;
+  margin-top: var(--space-sm);
 }
 
 .pref-item {
@@ -357,9 +357,9 @@ async function handleDeleteTemplate(tpl) {
 
 .pref-item label {
   display: block;
-  font-size: 14px;
+  font-size: var(--text-base);
   color: var(--text-secondary);
-  margin-bottom: 8px;
+  margin-bottom: var(--space-sm);
 }
 
 /* ===== 模板管理 ===== */
@@ -367,8 +367,8 @@ async function handleDeleteTemplate(tpl) {
 .template-loading,
 .template-empty {
   color: var(--text-muted);
-  font-size: 13px;
-  padding: 8px 0;
+  font-size: var(--text-sm);
+  padding: var(--space-sm) 0;
 }
 
 .template-manage-item {
@@ -389,19 +389,19 @@ async function handleDeleteTemplate(tpl) {
 }
 
 .template-manage-title {
-  font-size: 14px;
+  font-size: var(--text-base);
   color: var(--text-primary);
   font-weight: 500;
 }
 
 .template-manage-cat {
   display: inline-block;
-  font-size: 11px;
+  font-size: var(--text-xs);
   color: var(--accent);
   background: var(--accent-bg);
   padding: 1px 6px;
   border-radius: 8px;
-  margin-left: 8px;
+  margin-left: var(--space-sm);
 }
 
 .template-manage-preview {
@@ -417,16 +417,31 @@ async function handleDeleteTemplate(tpl) {
 .template-manage-actions {
   flex-shrink: 0;
   display: flex;
-  gap: 4px;
-  margin-left: 8px;
+  gap: var(--space-xs);
+  margin-left: var(--space-sm);
 }
 
 .template-edit-field {
-  margin-bottom: 8px;
+  margin-bottom: var(--space-sm);
 }
 
 .template-edit-actions {
   display: flex;
-  gap: 8px;
+  gap: var(--space-sm);
+}
+
+@media (max-width: 480px) {
+  .settings-page {
+    padding: var(--space-lg) var(--space-md);
+  }
+
+  .settings-card {
+    width: 100%;
+    padding: var(--space-lg);
+  }
+
+  .avatar-picker {
+    grid-template-columns: repeat(4, 1fr);
+  }
 }
 </style>

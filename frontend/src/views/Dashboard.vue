@@ -98,22 +98,22 @@ function formatDate(dateStr) {
 
 <style scoped>
 .dashboard-page {
-  max-width: 800px;
+  max-width: var(--page-max-width);
   margin: 0 auto;
-  padding: 32px 24px;
+  padding: var(--space-xl) var(--space-lg);
   min-height: 100vh;
   background: var(--bg-primary);
 }
 
 .dashboard-header h1 {
-  font-size: 24px;
+  font-size: var(--text-2xl);
   font-weight: 700;
   color: var(--text-primary);
-  margin-bottom: 4px;
+  margin-bottom: var(--space-xs);
 }
 
 .subtitle {
-  font-size: 14px;
+  font-size: var(--text-base);
   color: var(--text-muted);
   margin-bottom: 28px;
 }
@@ -127,24 +127,24 @@ function formatDate(dateStr) {
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 12px;
-  margin-bottom: 32px;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-xl);
 }
 
 .stat-card {
   background: var(--bg-secondary);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  padding: 20px 16px;
+  padding: 20px var(--space-md);
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  gap: var(--space-xs);
 }
 
 .stat-icon {
   font-size: 24px;
-  margin-bottom: 4px;
+  margin-bottom: var(--space-xs);
 }
 
 .stat-value {
@@ -154,19 +154,19 @@ function formatDate(dateStr) {
 }
 
 .stat-label {
-  font-size: 13px;
+  font-size: var(--text-sm);
   color: var(--text-muted);
 }
 
 .section {
-  margin-bottom: 32px;
+  margin-bottom: var(--space-xl);
 }
 
 .section h2 {
-  font-size: 16px;
+  font-size: var(--text-lg);
   font-weight: 600;
   color: var(--text-primary);
-  margin-bottom: 16px;
+  margin-bottom: var(--space-md);
 }
 
 .chart-area {
@@ -206,23 +206,23 @@ function formatDate(dateStr) {
 .chart-labels {
   display: flex;
   justify-content: space-between;
-  margin-top: 8px;
-  font-size: 11px;
+  margin-top: var(--space-sm);
+  font-size: var(--text-xs);
   color: var(--text-muted);
 }
 
 .tags-list {
   display: flex;
-  gap: 8px;
+  gap: var(--space-sm);
   flex-wrap: wrap;
 }
 
 .tag-item {
   background: var(--bg-secondary);
   border: 1px solid var(--border);
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
   padding: 6px 14px;
-  font-size: 13px;
+  font-size: var(--text-sm);
   color: var(--text-secondary);
   display: flex;
   align-items: center;
@@ -232,7 +232,7 @@ function formatDate(dateStr) {
 .tag-count {
   background: var(--accent-bg);
   color: var(--accent);
-  font-size: 11px;
+  font-size: var(--text-xs);
   font-weight: 600;
   padding: 1px 6px;
   border-radius: 10px;

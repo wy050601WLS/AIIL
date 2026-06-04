@@ -280,10 +280,6 @@ async function handleSaveCard(msg) {
   margin-bottom: 8px;
 }
 
-.welcome p {
-  font-size: 14px;
-}
-
 /* 移动端 */
 @media (max-width: 768px) {
   .menu-btn {

@@ -143,7 +143,7 @@ function tagList(tags) {
         <template v-else>
           <div class="card-content">{{ card.content }}</div>
           <div v-if="card.tags" class="card-tags">
-            <span v-for="tag in tagList(card.tags)" :key="tag" class="tag-chip">{{ tag }}</span>
+            <span v-for="tag in tagList(card.tags)" :key="tag" class="tag-chip tag-chip--accent">{{ tag }}</span>
           </div>
           <div class="card-footer">
             <span v-if="card.source" class="card-source">{{ card.source }}</span>
@@ -159,29 +159,29 @@ function tagList(tags) {
 
 <style scoped>
 .cards-page {
-  max-width: 800px;
+  max-width: var(--page-max-width);
   margin: 0 auto;
-  padding: 32px 24px;
+  padding: var(--space-xl) var(--space-lg);
   min-height: 100vh;
   background: var(--bg-primary);
 }
 
 .cards-header h1 {
-  font-size: 24px;
+  font-size: var(--text-2xl);
   font-weight: 700;
   color: var(--text-primary);
-  margin-bottom: 4px;
+  margin-bottom: var(--space-xs);
 }
 
 .subtitle {
-  font-size: 14px;
+  font-size: var(--text-base);
   color: var(--text-muted);
-  margin-bottom: 24px;
+  margin-bottom: var(--space-lg);
 }
 
 .tag-bar {
   display: flex;
-  gap: 4px;
+  gap: var(--space-xs);
   flex-wrap: wrap;
   margin-bottom: 20px;
 }
@@ -194,21 +194,21 @@ function tagList(tags) {
 .empty {
   text-align: center;
   color: var(--text-muted);
-  font-size: 14px;
+  font-size: var(--text-base);
   padding: 60px 0;
 }
 
 .cards-grid {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--space-sm);
 }
 
 .card-item {
   background: var(--bg-secondary);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  padding: 16px;
+  padding: var(--space-md);
   transition: box-shadow 0.15s;
 }
 
@@ -217,33 +217,25 @@ function tagList(tags) {
 }
 
 .card-content {
-  font-size: 14px;
+  font-size: var(--text-base);
   line-height: 1.7;
   color: var(--text-primary);
   white-space: pre-wrap;
   word-break: break-word;
-  margin-bottom: 8px;
+  margin-bottom: var(--space-sm);
 }
 
 .card-tags {
   display: flex;
   gap: 6px;
   flex-wrap: wrap;
-  margin-bottom: 8px;
-}
-
-.tag-chip {
-  font-size: 11px;
-  background: var(--accent-bg);
-  color: var(--accent);
-  padding: 2px 8px;
-  border-radius: 10px;
+  margin-bottom: var(--space-sm);
 }
 
 .card-footer {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--space-sm);
   font-size: 12px;
   color: var(--text-muted);
 }
@@ -283,13 +275,13 @@ function tagList(tags) {
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   color: var(--text-primary);
-  font-size: 14px;
+  font-size: var(--text-base);
   line-height: 1.7;
-  padding: 8px 12px;
+  padding: var(--space-sm) var(--space-sm);
   resize: vertical;
   outline: none;
   font-family: inherit;
-  margin-bottom: 8px;
+  margin-bottom: var(--space-sm);
 }
 
 .edit-textarea:focus {
@@ -302,10 +294,10 @@ function tagList(tags) {
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   color: var(--text-primary);
-  font-size: 13px;
-  padding: 6px 12px;
+  font-size: var(--text-sm);
+  padding: 6px var(--space-sm);
   outline: none;
-  margin-bottom: 8px;
+  margin-bottom: var(--space-sm);
 }
 
 .edit-tags-input:focus {
@@ -314,7 +306,7 @@ function tagList(tags) {
 
 .edit-actions {
   display: flex;
-  gap: 8px;
+  gap: var(--space-sm);
 }
 
 @media (max-width: 768px) {

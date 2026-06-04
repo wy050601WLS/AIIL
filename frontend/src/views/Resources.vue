@@ -431,22 +431,22 @@ function formatSize(bytes) {
 
 <style scoped>
 .resources-page {
-  max-width: 800px;
+  max-width: var(--page-max-width);
   margin: 0 auto;
-  padding: 32px 24px;
+  padding: var(--space-xl) var(--space-lg);
   min-height: 100vh;
   background: var(--bg-primary);
 }
 
 .resources-header h1 {
-  font-size: 24px;
+  font-size: var(--text-2xl);
   font-weight: 700;
   color: var(--text-primary);
-  margin-bottom: 4px;
+  margin-bottom: var(--space-xs);
 }
 
 .subtitle {
-  font-size: 14px;
+  font-size: var(--text-base);
   color: var(--text-muted);
   margin-bottom: 20px;
 }
@@ -455,7 +455,7 @@ function formatSize(bytes) {
 
 .tab-bar {
   display: flex;
-  gap: 4px;
+  gap: var(--space-xs);
   margin-bottom: 20px;
   border-bottom: 1px solid var(--border);
   padding-bottom: 0;
@@ -466,9 +466,9 @@ function formatSize(bytes) {
   border: none;
   border-bottom: 2px solid transparent;
   color: var(--text-muted);
-  font-size: 14px;
+  font-size: var(--text-base);
   font-weight: 500;
-  padding: 8px 16px;
+  padding: var(--space-sm) var(--space-md);
   cursor: pointer;
   transition: color 0.15s, border-color 0.15s;
   font-family: inherit;
@@ -491,7 +491,7 @@ function formatSize(bytes) {
 
 .ai-search-input {
   display: flex;
-  gap: 8px;
+  gap: var(--space-sm);
 }
 
 .ask-input {
@@ -500,8 +500,8 @@ function formatSize(bytes) {
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   color: var(--text-primary);
-  font-size: 14px;
-  padding: 8px 14px;
+  font-size: var(--text-base);
+  padding: var(--space-sm) 14px;
   outline: none;
   font-family: inherit;
 }
@@ -515,11 +515,11 @@ function formatSize(bytes) {
 }
 
 .ai-answer {
-  margin-top: 12px;
+  margin-top: var(--space-sm);
   background: var(--bg-secondary);
   border: 1px solid var(--accent-bg);
   border-radius: var(--radius-md);
-  padding: 14px 16px;
+  padding: 14px var(--space-md);
 }
 
 .ai-answer-label {
@@ -530,19 +530,19 @@ function formatSize(bytes) {
 }
 
 .ai-answer-text {
-  font-size: 14px;
+  font-size: var(--text-base);
   line-height: 1.7;
   color: var(--text-primary);
   white-space: pre-wrap;
   word-break: break-word;
-  margin-bottom: 8px;
+  margin-bottom: var(--space-sm);
 }
 
 /* ===== 筛选栏 ===== */
 
 .filter-bar {
   display: flex;
-  gap: 8px;
+  gap: var(--space-sm);
   align-items: center;
   flex-wrap: wrap;
   margin-bottom: 20px;
@@ -555,8 +555,8 @@ function formatSize(bytes) {
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   color: var(--text-primary);
-  font-size: 13px;
-  padding: 6px 12px;
+  font-size: var(--text-sm);
+  padding: 6px var(--space-sm);
   outline: none;
   font-family: inherit;
 }
@@ -577,7 +577,7 @@ function formatSize(bytes) {
 
 .search-bar {
   display: flex;
-  gap: 8px;
+  gap: var(--space-sm);
   align-items: center;
   margin-bottom: 20px;
 }
@@ -588,8 +588,8 @@ function formatSize(bytes) {
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   color: var(--text-primary);
-  font-size: 14px;
-  padding: 8px 14px;
+  font-size: var(--text-base);
+  padding: var(--space-sm) 14px;
   outline: none;
   font-family: inherit;
 }
@@ -611,21 +611,21 @@ function formatSize(bytes) {
 .empty {
   text-align: center;
   color: var(--text-muted);
-  font-size: 14px;
+  font-size: var(--text-base);
   padding: 60px 0;
 }
 
 .resources-grid {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--space-sm);
 }
 
 .resource-item {
   background: var(--bg-secondary);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  padding: 16px;
+  padding: var(--space-md);
   transition: box-shadow 0.15s;
 }
 
@@ -640,7 +640,7 @@ function formatSize(bytes) {
 .resource-header-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-sm);
   margin-bottom: 6px;
 }
 
@@ -670,19 +670,19 @@ function formatSize(bytes) {
 }
 
 .resource-type-badge {
-  font-size: 11px;
+  font-size: var(--text-xs);
   color: var(--text-muted);
   background: var(--bg-tertiary);
-  padding: 2px 8px;
-  border-radius: 8px;
+  padding: 2px var(--space-sm);
+  border-radius: var(--radius-sm);
   flex-shrink: 0;
 }
 
 .resource-desc {
-  font-size: 13px;
+  font-size: var(--text-sm);
   line-height: 1.6;
   color: var(--text-secondary);
-  margin-bottom: 8px;
+  margin-bottom: var(--space-sm);
   white-space: pre-wrap;
   word-break: break-word;
 }
@@ -699,29 +699,21 @@ function formatSize(bytes) {
   display: flex;
   gap: 6px;
   flex-wrap: wrap;
-  margin-bottom: 8px;
+  margin-bottom: var(--space-sm);
 }
 
 .resource-category {
-  font-size: 11px;
+  font-size: var(--text-xs);
   background: var(--accent-bg);
   color: var(--accent);
-  padding: 2px 8px;
-  border-radius: 10px;
-}
-
-.tag-chip {
-  font-size: 11px;
-  background: var(--bg-tertiary);
-  color: var(--text-muted);
-  padding: 2px 8px;
+  padding: 2px var(--space-sm);
   border-radius: 10px;
 }
 
 .resource-footer {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--space-sm);
   font-size: 12px;
   color: var(--text-muted);
 }
@@ -758,7 +750,7 @@ function formatSize(bytes) {
 
 .file-info {
   margin-top: 6px;
-  font-size: 13px;
+  font-size: var(--text-sm);
   color: var(--text-secondary);
 }
 

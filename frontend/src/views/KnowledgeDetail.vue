@@ -109,7 +109,7 @@ function tagList(tags) {
             <el-button text size="small" @click="startEdit">编辑</el-button>
           </div>
           <div v-if="knowledgeStore.currentDoc.tags" class="doc-tags">
-            <span v-for="tag in tagList(knowledgeStore.currentDoc.tags)" :key="tag" class="tag-chip">{{ tag }}</span>
+            <span v-for="tag in tagList(knowledgeStore.currentDoc.tags)" :key="tag" class="tag-chip tag-chip--accent">{{ tag }}</span>
           </div>
         </template>
         <template v-else>
@@ -147,9 +147,9 @@ function tagList(tags) {
 
 <style scoped>
 .detail-page {
-  max-width: 800px;
+  max-width: var(--page-max-width);
   margin: 0 auto;
-  padding: 32px 24px;
+  padding: var(--space-xl) var(--space-lg);
   min-height: 100vh;
   background: var(--bg-primary);
 }
@@ -157,7 +157,7 @@ function tagList(tags) {
 .loading, .empty {
   text-align: center;
   color: var(--text-muted);
-  font-size: 14px;
+  font-size: var(--text-base);
   padding: 60px 0;
 }
 
@@ -167,7 +167,7 @@ function tagList(tags) {
 
 .back-btn {
   color: var(--text-secondary);
-  font-size: 14px;
+  font-size: var(--text-base);
 }
 
 .back-btn:hover {
@@ -175,13 +175,13 @@ function tagList(tags) {
 }
 
 .detail-meta {
-  margin-bottom: 24px;
+  margin-bottom: var(--space-lg);
   padding-bottom: 20px;
   border-bottom: 1px solid var(--border);
 }
 
 .doc-title {
-  font-size: 22px;
+  font-size: var(--text-2xl);
   font-weight: 700;
   color: var(--text-primary);
   margin-bottom: 10px;
@@ -190,17 +190,17 @@ function tagList(tags) {
 .meta-row {
   display: flex;
   align-items: center;
-  gap: 12px;
-  font-size: 13px;
+  gap: var(--space-sm);
+  font-size: var(--text-sm);
   color: var(--text-muted);
   margin-bottom: 10px;
 }
 
 .meta-badge {
   background: var(--bg-tertiary);
-  padding: 2px 8px;
-  border-radius: 8px;
-  font-size: 11px;
+  padding: 2px var(--space-sm);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-xs);
 }
 
 .doc-tags {
@@ -209,28 +209,20 @@ function tagList(tags) {
   flex-wrap: wrap;
 }
 
-.tag-chip {
-  font-size: 11px;
-  background: var(--accent-bg);
-  color: var(--accent);
-  padding: 2px 8px;
-  border-radius: 10px;
-}
-
 .edit-form {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--space-sm);
 }
 
 .edit-row {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--space-sm);
 }
 
 .edit-row label {
-  font-size: 14px;
+  font-size: var(--text-base);
   color: var(--text-secondary);
   width: 40px;
   flex-shrink: 0;
@@ -240,9 +232,9 @@ function tagList(tags) {
   flex: 1;
   background: var(--bg-tertiary);
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   color: var(--text-primary);
-  font-size: 14px;
+  font-size: var(--text-base);
   padding: 6px 10px;
   outline: none;
   font-family: inherit;
@@ -254,18 +246,18 @@ function tagList(tags) {
 
 .edit-actions {
   display: flex;
-  gap: 8px;
+  gap: var(--space-sm);
 }
 
 .detail-content {
   background: var(--bg-secondary);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  padding: 24px;
+  padding: var(--space-lg);
 }
 
 .content-text {
-  font-size: 14px;
+  font-size: var(--text-base);
   line-height: 1.8;
   color: var(--text-primary);
   white-space: pre-wrap;
@@ -275,7 +267,7 @@ function tagList(tags) {
 .content-empty {
   text-align: center;
   color: var(--text-muted);
-  font-size: 14px;
+  font-size: var(--text-base);
   padding: 40px 0;
 }
 

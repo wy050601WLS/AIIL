@@ -75,8 +75,8 @@ async function handleLogin() {
 }
 
 .auth-card {
-  width: 400px;
-  padding: 48px 40px;
+  width: var(--auth-card-width);
+  padding: var(--space-xl) 40px;
   background: var(--bg-secondary);
   border-radius: var(--radius-xl);
   border: 1px solid var(--border);
@@ -84,11 +84,11 @@ async function handleLogin() {
 }
 
 .auth-title {
-  font-size: 28px;
+  font-size: var(--text-2xl);
   font-weight: 700;
   text-align: center;
   color: var(--text-primary);
-  margin-bottom: 8px;
+  margin-bottom: var(--space-sm);
 }
 
 .auth-subtitle {
@@ -100,14 +100,14 @@ async function handleLogin() {
 .auth-btn {
   width: 100%;
   height: 44px;
-  font-size: 16px;
+  font-size: var(--text-lg);
   border-radius: var(--radius-md);
 }
 
 .auth-link {
   text-align: center;
   color: var(--text-secondary);
-  font-size: 14px;
+  font-size: var(--text-base);
 }
 
 .auth-link a {
@@ -117,5 +117,12 @@ async function handleLogin() {
 
 .auth-link a:hover {
   color: var(--accent-hover);
+}
+
+@media (max-width: 480px) {
+  .auth-card {
+    width: 100%;
+    padding: var(--space-xl) var(--space-lg);
+  }
 }
 </style>
