@@ -634,3 +634,26 @@ AIIL/
 - 删除独立的 Knowledge.vue 页面
 - 路由移除 /knowledge，保留 /knowledge/:id 详情页
 - Sidebar 移除知识库独立导航按钮
+
+---
+
+## 阶段二十七：可见性控制
+
+为学习资料和知识库文档添加可见性选项（公共/私人/草稿），不同可见性影响列表展示和访问权限。
+
+### Z-1：后端可见性支持
+- LearningResource 和 KnowledgeDocument 模型新增 `visibility` 列（默认 public）
+- ResourceCreate / ResourceUpdate / ResourceResponse / DocumentResponse / DocumentUpdate schema 新增 visibility 字段
+- resources.py 和 knowledge.py 列表接口过滤逻辑：`WHERE visibility = 'public' OR user_id = :current_user`
+- 详情接口同样过滤，非所有者不可见 private/draft 资料
+- init_db.sql 同步 visibility 列
+
+### Z-2：前端可见性 UI
+- Resources.vue 学习资料表单增加可见性选择器（公共/私人/草稿，含说明文字）
+- Resources.vue 知识库上传对话框增加可见性选择器
+- 资料卡片和文档卡片显示可见性标签（绿色=公共，橙色=私人，蓝色=草稿）
+- KnowledgeDetail.vue 详情页显示可见性标签，编辑模式支持修改可见性
+- knowledge.js API 和 store 透传 visibility 参数
+
+### Z-3：种子数据更新
+- seed_data.py 资料和文档混合使用不同可见性值，便于测试过滤逻辑

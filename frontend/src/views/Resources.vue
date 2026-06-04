@@ -26,9 +26,14 @@ const askQuestion = ref('')
 
 const dialogVisible = ref(false)
 const editingId = ref(null)
-const form = ref({ title: '', url: '', description: '', category: '', resource_type: '', tags: '' })
+const form = ref({ title: '', url: '', description: '', category: '', resource_type: '', tags: '', visibility: 'public' })
 
 const categories = ['编程', '数学', '英语', '设计', '科学', '历史', '其他']
+const visibilities = [
+  { value: 'public', label: '公共', desc: '所有人可见' },
+  { value: 'private', label: '私人', desc: '仅自己可见' },
+  { value: 'draft', label: '草稿', desc: '仅自己可见，未完成' },
+]
 const types = [
   { value: 'article', label: '文章' },
   { value: 'video', label: '视频' },
@@ -58,6 +63,7 @@ const searchKeyword = ref('')
 const uploadDialogVisible = ref(false)
 const uploadTitle = ref('')
 const uploadTags = ref('')
+const uploadVisibility = ref('public')
 const selectedFile = ref(null)
 
 const fileTypeIcons = { pdf: '📄', docx: '📝', txt: '📃', md: '📑' }
@@ -71,7 +77,7 @@ onMounted(() => {
 // ===== 学习资料操作 =====
 function openAddDialog() {
   editingId.value = null
-  form.value = { title: '', url: '', description: '', category: '', resource_type: '', tags: '' }
+  form.value = { title: '', url: '', description: '', category: '', resource_type: '', tags: '', visibility: 'public' }
   dialogVisible.value = true
 }
 
@@ -84,6 +90,7 @@ function openEditDialog(resource) {
     category: resource.category || '',
     resource_type: resource.resource_type || '',
     tags: resource.tags || '',
+    visibility: resource.visibility || 'public',
   }
   dialogVisible.value = true
 }
@@ -100,6 +107,7 @@ async function handleSave() {
     category: form.value.category || null,
     resource_type: form.value.resource_type || null,
     tags: form.value.tags.trim() || null,
+    visibility: form.value.visibility || 'public',
   }
   if (editingId.value) {
     await resourcesStore.editResource(editingId.value, data)
@@ -146,6 +154,7 @@ function openUploadDialog() {
   selectedFile.value = null
   uploadTitle.value = ''
   uploadTags.value = ''
+  uploadVisibility.value = 'public'
   uploadDialogVisible.value = true
 }
 
@@ -168,6 +177,7 @@ async function handleUpload() {
     selectedFile.value,
     uploadTitle.value.trim() || undefined,
     uploadTags.value.trim() || undefined,
+    uploadVisibility.value,
   )
   if (doc) {
     uploadDialogVisible.value = false
@@ -204,6 +214,15 @@ function tagList(tags) {
 function typeLabel(type) {
   const found = types.find(t => t.value === type)
   return found ? found.label : type
+}
+
+function visibilityLabel(v) {
+  const found = visibilities.find(item => item.value === v)
+  return found ? found.label : v
+}
+
+function visibilityClass(v) {
+  return `vis-${v || 'public'}`
 }
 
 function formatSize(bytes) {
@@ -279,6 +298,7 @@ function formatSize(bytes) {
               <span v-else>{{ resource.title }}</span>
             </span>
             <span v-if="resource.resource_type" class="resource-type-badge">{{ typeLabel(resource.resource_type) }}</span>
+            <span class="visibility-badge" :class="visibilityClass(resource.visibility)">{{ visibilityLabel(resource.visibility) }}</span>
           </div>
           <div v-if="resource.description" class="resource-desc">{{ resource.description }}</div>
           <div class="resource-meta">
@@ -318,6 +338,14 @@ function formatSize(bytes) {
           <el-form-item label="标签">
             <el-input v-model="form.tags" placeholder="标签（逗号分隔）" maxlength="500" />
           </el-form-item>
+          <el-form-item label="可见性">
+            <el-select v-model="form.visibility" style="width: 100%;">
+              <el-option v-for="v in visibilities" :key="v.value" :label="v.label" :value="v.value">
+                <span>{{ v.label }}</span>
+                <span style="color: var(--text-muted); font-size: 12px; margin-left: 8px;">{{ v.desc }}</span>
+              </el-option>
+            </el-select>
+          </el-form-item>
         </el-form>
         <template #footer>
           <el-button @click="dialogVisible = false">取消</el-button>
@@ -354,6 +382,7 @@ function formatSize(bytes) {
             <span class="doc-icon">{{ fileTypeIcons[doc.file_type] || '📄' }}</span>
             <span class="resource-title">{{ doc.title }}</span>
             <span class="resource-type-badge">{{ fileTypeLabels[doc.file_type] || doc.file_type }}</span>
+            <span class="visibility-badge" :class="visibilityClass(doc.visibility)">{{ visibilityLabel(doc.visibility) }}</span>
           </div>
           <div v-if="doc.content_text" class="resource-desc doc-preview">{{ doc.content_text.slice(0, 120) }}...</div>
           <div v-if="doc.tags" class="resource-meta">
@@ -381,6 +410,14 @@ function formatSize(bytes) {
           </el-form-item>
           <el-form-item label="标签">
             <el-input v-model="uploadTags" placeholder="标签（逗号分隔）" maxlength="500" />
+          </el-form-item>
+          <el-form-item label="可见性">
+            <el-select v-model="uploadVisibility" style="width: 100%;">
+              <el-option v-for="v in visibilities" :key="v.value" :label="v.label" :value="v.value">
+                <span>{{ v.label }}</span>
+                <span style="color: var(--text-muted); font-size: 12px; margin-left: 8px;">{{ v.desc }}</span>
+              </el-option>
+            </el-select>
           </el-form-item>
         </el-form>
         <template #footer>
@@ -717,6 +754,31 @@ function formatSize(bytes) {
 
 .resource-delete:hover {
   color: var(--danger);
+}
+
+/* ===== 可见性标签 ===== */
+
+.visibility-badge {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 8px;
+  flex-shrink: 0;
+  font-weight: 500;
+}
+
+.vis-public {
+  background: #e6f7e6;
+  color: #2d7d2d;
+}
+
+.vis-private {
+  background: #fff3e0;
+  color: #b86e00;
+}
+
+.vis-draft {
+  background: #e8eaf6;
+  color: #5c6bc0;
 }
 
 .file-info {

@@ -26,6 +26,7 @@ def upload_document(
     file: UploadFile = File(...),
     title: str = Form(None),
     tags: str = Form(None),
+    visibility: str = Form("public"),
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -71,6 +72,7 @@ def upload_document(
         file_size=len(content),
         content_text=content_text,
         tags=tags.strip() if tags else None,
+        visibility=visibility if visibility in ("public", "private", "draft") else "public",
     )
     db.add(doc)
     db.commit()
@@ -84,8 +86,11 @@ def list_documents(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """获取所有用户的文档列表，支持关键词搜索标题和标签"""
-    query = db.query(KnowledgeDocument)
+    """获取文档列表（公开文档 + 自己的文档），支持关键词搜索标题和标签"""
+    from sqlalchemy import or_
+    query = db.query(KnowledgeDocument).filter(
+        or_(KnowledgeDocument.visibility == "public", KnowledgeDocument.user_id == user.id)
+    )
     if keyword and keyword.strip():
         q = f"%{keyword.strip()}%"
         query = query.filter(
@@ -96,8 +101,12 @@ def list_documents(
 
 @router.get("/{doc_id}", response_model=DocumentResponse)
 def get_document(doc_id: int, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    """获取文档详情（含全文内容）"""
-    doc = db.query(KnowledgeDocument).filter(KnowledgeDocument.id == doc_id).first()
+    """获取文档详情（含全文内容），仅公开文档或自己的文档可访问"""
+    from sqlalchemy import or_
+    doc = db.query(KnowledgeDocument).filter(
+        KnowledgeDocument.id == doc_id,
+        or_(KnowledgeDocument.visibility == "public", KnowledgeDocument.user_id == user.id),
+    ).first()
     if not doc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="文档不存在")
     return doc
@@ -116,6 +125,8 @@ def update_document(doc_id: int, data: DocumentUpdate, user: User = Depends(get_
         doc.title = data.title
     if data.tags is not None:
         doc.tags = data.tags
+    if data.visibility is not None:
+        doc.visibility = data.visibility
     db.commit()
     db.refresh(doc)
     return doc

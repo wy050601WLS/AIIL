@@ -31,10 +31,10 @@ export const useKnowledgeStore = defineStore('knowledge', () => {
   }
 
   /** 上传文档 */
-  async function addDocument(file, title, tags) {
+  async function addDocument(file, title, tags, visibility) {
     uploading.value = true
     try {
-      const { data } = await uploadDocument(file, title, tags)
+      const { data } = await uploadDocument(file, title, tags, visibility)
       documents.value.unshift(data)
       ElMessage.success('文档上传成功')
       return data

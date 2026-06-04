@@ -1,6 +1,6 @@
 -- AI 智慧学习系统数据库初始化脚本
 -- 数据库: ai
--- 最后同步: 2026-06-03（新增 knowledge_documents 表）
+-- 最后同步: 2026-06-03（新增 visibility 列）
 
 USE ai;
 
@@ -75,6 +75,7 @@ CREATE TABLE IF NOT EXISTS learning_resources (
     category VARCHAR(50) DEFAULT NULL,
     resource_type VARCHAR(20) DEFAULT NULL,
     tags VARCHAR(500) DEFAULT NULL,
+    visibility VARCHAR(10) DEFAULT 'public',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     INDEX idx_user_id (user_id)
@@ -90,6 +91,7 @@ CREATE TABLE IF NOT EXISTS knowledge_documents (
     file_size INT DEFAULT NULL,
     content_text LONGTEXT DEFAULT NULL,
     tags VARCHAR(500) DEFAULT NULL,
+    visibility VARCHAR(10) DEFAULT 'public',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     INDEX idx_user_id (user_id)

@@ -30,6 +30,7 @@ def create_resource(data: ResourceCreate, user: User = Depends(get_current_user)
         category=data.category,
         resource_type=data.resource_type,
         tags=data.tags,
+        visibility=data.visibility,
     )
     db.add(resource)
     db.commit()
@@ -44,8 +45,11 @@ def list_resources(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """获取所有用户的学习资料列表，支持按分类和类型过滤"""
-    query = db.query(LearningResource)
+    """获取学习资料列表（公开资料 + 自己的资料），支持按分类和类型过滤"""
+    from sqlalchemy import or_
+    query = db.query(LearningResource).filter(
+        or_(LearningResource.visibility == "public", LearningResource.user_id == user.id)
+    )
     if category:
         query = query.filter(LearningResource.category == category)
     if resource_type:
@@ -74,6 +78,8 @@ def update_resource(resource_id: int, data: ResourceUpdate, user: User = Depends
         resource.resource_type = data.resource_type
     if data.tags is not None:
         resource.tags = data.tags
+    if data.visibility is not None:
+        resource.visibility = data.visibility
     db.commit()
     db.refresh(resource)
     return resource
@@ -99,9 +105,11 @@ def ask_resources(data: ResourceAskRequest, user: User = Depends(get_current_use
 
     将用户的问题和所有资料的标题/描述发送给 AI，让 AI 分析哪些资料与问题相关并给出建议。
     """
-    # 加载所有资料
+    # 加载公开资料 + 自己的资料
+    from sqlalchemy import or_
     resources = (
         db.query(LearningResource)
+        .filter(or_(LearningResource.visibility == "public", LearningResource.user_id == user.id))
         .order_by(LearningResource.created_at.desc())
         .all()
     )

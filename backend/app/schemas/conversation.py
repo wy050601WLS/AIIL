@@ -121,6 +121,7 @@ class ResourceCreate(BaseModel):
     category: str | None = Field(None, max_length=50)
     resource_type: str | None = Field(None, max_length=20)
     tags: str | None = None
+    visibility: str = Field(default="public", pattern="^(public|private|draft)$")
 
 
 class ResourceUpdate(BaseModel):
@@ -131,6 +132,7 @@ class ResourceUpdate(BaseModel):
     category: str | None = None
     resource_type: str | None = None
     tags: str | None = None
+    visibility: str | None = Field(None, pattern="^(public|private|draft)$")
 
 
 class ResourceResponse(BaseModel):
@@ -142,6 +144,7 @@ class ResourceResponse(BaseModel):
     category: str | None = None
     resource_type: str | None = None
     tags: str | None = None
+    visibility: str = "public"
     created_at: datetime
 
     model_config = {"from_attributes": True}
@@ -162,6 +165,7 @@ class DocumentResponse(BaseModel):
     file_size: int | None = None
     content_text: str | None = None
     tags: str | None = None
+    visibility: str = "public"
     created_at: datetime
 
     model_config = {"from_attributes": True}
@@ -171,6 +175,7 @@ class DocumentUpdate(BaseModel):
     """更新知识库文档请求体（所有字段可选）"""
     title: str | None = Field(None, min_length=1, max_length=200)
     tags: str | None = None
+    visibility: str | None = Field(None, pattern="^(public|private|draft)$")
 
 
 # ===== 学习面板相关 =====

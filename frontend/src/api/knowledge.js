@@ -7,11 +7,12 @@
 import api from './index'
 
 /** 上传文档文件（multipart/form-data） */
-export function uploadDocument(file, title, tags) {
+export function uploadDocument(file, title, tags, visibility) {
   const formData = new FormData()
   formData.append('file', file)
   if (title) formData.append('title', title)
   if (tags) formData.append('tags', tags)
+  if (visibility) formData.append('visibility', visibility)
   return api.post('/knowledge/upload', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   })

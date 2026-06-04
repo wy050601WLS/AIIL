@@ -103,6 +103,7 @@ class LearningResource(Base):
     category = Column(String(50), nullable=True)                         # 分类（编程/数学/英语等）
     resource_type = Column(String(20), nullable=True)                    # 类型（article/video/course/tool/book/other）
     tags = Column(String(500), nullable=True)                            # 标签，逗号分隔
+    visibility = Column(String(10), default="public")                    # 可见性：public/private/draft
     created_at = Column(DateTime, default=datetime.now)
 
 
@@ -123,4 +124,5 @@ class KnowledgeDocument(Base):
     file_size = Column(Integer, nullable=True)                           # 文件大小（字节）
     content_text = Column(Text, nullable=True)                           # 解析后的纯文本内容
     tags = Column(String(500), nullable=True)                            # 标签，逗号分隔
+    visibility = Column(String(10), default="public")                    # 可见性：public/private/draft
     created_at = Column(DateTime, default=datetime.now)

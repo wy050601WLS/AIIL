@@ -16,6 +16,13 @@ const knowledgeStore = useKnowledgeStore()
 const editing = ref(false)
 const editTitle = ref('')
 const editTags = ref('')
+const editVisibility = ref('public')
+
+const visibilities = [
+  { value: 'public', label: '公共', desc: '所有人可见' },
+  { value: 'private', label: '私人', desc: '仅自己可见' },
+  { value: 'draft', label: '草稿', desc: '仅自己可见，未完成' },
+]
 
 const fileTypeLabels = {
   pdf: 'PDF',
@@ -34,6 +41,7 @@ function startEdit() {
   if (!doc) return
   editTitle.value = doc.title
   editTags.value = doc.tags || ''
+  editVisibility.value = doc.visibility || 'public'
   editing.value = true
 }
 
@@ -45,6 +53,7 @@ async function saveEdit() {
   await knowledgeStore.editDocument(knowledgeStore.currentDoc.id, {
     title: editTitle.value.trim(),
     tags: editTags.value.trim() || null,
+    visibility: editVisibility.value,
   })
   editing.value = false
 }
@@ -54,7 +63,7 @@ function cancelEdit() {
 }
 
 function goBack() {
-  router.push('/knowledge')
+  router.push('/resources')
 }
 
 function formatSize(bytes) {
@@ -89,6 +98,7 @@ function tagList(tags) {
           <h1 class="doc-title">{{ knowledgeStore.currentDoc.title }}</h1>
           <div class="meta-row">
             <span class="meta-badge">{{ fileTypeLabels[knowledgeStore.currentDoc.file_type] || knowledgeStore.currentDoc.file_type }}</span>
+            <span class="visibility-badge" :class="`vis-${knowledgeStore.currentDoc.visibility || 'public'}`">{{ visibilities.find(v => v.value === knowledgeStore.currentDoc.visibility)?.label || '公共' }}</span>
             <span class="meta-size">{{ formatSize(knowledgeStore.currentDoc.file_size) }}</span>
             <span class="meta-time">{{ formatTime(knowledgeStore.currentDoc.created_at) }}</span>
             <el-button text size="small" @click="startEdit">编辑</el-button>
@@ -106,6 +116,12 @@ function tagList(tags) {
             <div class="edit-row">
               <label>标签</label>
               <input v-model="editTags" class="edit-input" placeholder="逗号分隔" maxlength="500" />
+            </div>
+            <div class="edit-row">
+              <label>可见性</label>
+              <select v-model="editVisibility" class="edit-input">
+                <option v-for="v in visibilities" :key="v.value" :value="v.value">{{ v.label }} — {{ v.desc }}</option>
+              </select>
             </div>
             <div class="edit-actions">
               <el-button type="primary" size="small" @click="saveEdit">保存</el-button>
@@ -180,6 +196,28 @@ function tagList(tags) {
   padding: 2px 8px;
   border-radius: 8px;
   font-size: 11px;
+}
+
+.visibility-badge {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 8px;
+  font-weight: 500;
+}
+
+.vis-public {
+  background: #e6f7e6;
+  color: #2d7d2d;
+}
+
+.vis-private {
+  background: #fff3e0;
+  color: #b86e00;
+}
+
+.vis-draft {
+  background: #e8eaf6;
+  color: #5c6bc0;
 }
 
 .doc-tags {
