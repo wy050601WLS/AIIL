@@ -821,3 +821,20 @@ AIIL/
 - profile 加载去重：`profileLoaded` 标志避免 store 初始化和 Settings 页重复请求
 - Resources 页按 Tab 懒加载：切换到知识库 Tab 时才加载文档列表
 - Sidebar 过滤合并：searchFiltered + pinnedList + normalList 三次 filter 合并为单次遍历
+
+---
+
+## 阶段三十三：视觉模型支持
+
+支持切换到视觉模型（GPT-4o / Claude / Gemini）实现图片识别。
+
+### AF-1：后端模型列表扩展
+- `/models` 端点新增 `vision` 标志，标识每个模型是否支持图片识别
+- 新增 GPT-4o、GPT-4o Mini、Claude Sonnet 4、Claude Haiku 4.5、Gemini 2.0 Flash 等视觉模型
+- 默认模型仍为 `settings.AI_MODEL`（可配置）
+
+### AF-2：前端视觉模型 UI
+- 模型选择器下拉菜单显示「👁 视觉」标签标识支持图片的模型
+- chat store 新增 `currentModelSupportsVision` 计算属性
+- 发送图片时若当前模型不支持视觉，弹出 ElMessageBox.confirm 提示用户
+- 用户可选择继续发送（图片作为附件存储）或取消切换模型
