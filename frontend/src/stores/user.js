@@ -16,6 +16,7 @@ export const useUserStore = defineStore('user', () => {
   const nickname = ref('')
   const avatar = ref('')
   const preferences = ref(null)
+  let profileLoaded = false  // 避免重复加载 profile
 
   /** 显示名称：优先显示昵称，否则显示用户名 */
   const displayName = computed(() => nickname.value || username.value)
@@ -44,13 +45,15 @@ export const useUserStore = defineStore('user', () => {
     nickname.value = ''
     avatar.value = ''
     preferences.value = null
+    profileLoaded = false
     localStorage.removeItem('token')
     localStorage.removeItem('username')
     router.push('/login')
   }
 
-  /** 从后端加载用户个人资料（昵称、头像、偏好设置） */
+  /** 从后端加载用户个人资料（昵称、头像、偏好设置）。已加载则跳过。 */
   async function loadProfile() {
+    if (profileLoaded) return
     try {
       const { data } = await getProfile()
       nickname.value = data.nickname || ''
@@ -58,6 +61,7 @@ export const useUserStore = defineStore('user', () => {
       if (data.preferences) {
         preferences.value = JSON.parse(data.preferences)
       }
+      profileLoaded = true
     } catch {
       // 加载失败静默处理（Token 可能已过期）
     }

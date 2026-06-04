@@ -11,11 +11,22 @@ from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 
 from app.config import settings
-from app.database import Base  # noqa: F401 — 确保 SQLAlchemy 模型被注册到 Base.metadata
+from app.database import Base, SessionLocal  # noqa: F401 — 确保 SQLAlchemy 模型被注册到 Base.metadata
 from app.limiter import limiter
 from app.routers import auth, history, chat, cards, dashboard, templates, resources, knowledge
 
 app = FastAPI(title="AI 智慧学习系统")
+
+
+@app.on_event("startup")
+def init_builtin_templates():
+    """启动时初始化内置模板，避免每次请求都检查"""
+    from app.routers.templates import ensure_builtin_templates
+    db = SessionLocal()
+    try:
+        ensure_builtin_templates(db)
+    finally:
+        db.close()
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 

@@ -25,8 +25,9 @@ export const useTemplatesStore = defineStore('templates', () => {
     return groups
   })
 
-  /** 从后端加载模板列表 */
+  /** 从后端加载模板列表（已加载则跳过，避免重复请求） */
   async function loadTemplates() {
+    if (templates.value.length > 0) return
     loading.value = true
     try {
       const { data } = await getTemplates()

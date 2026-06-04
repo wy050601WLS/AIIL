@@ -6,7 +6,7 @@
   Tab 2: 知识库文档 — 上传文件、搜索、查看文档详情
 -->
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessageBox, ElMessage } from 'element-plus'
 import { marked } from 'marked'
@@ -88,9 +88,18 @@ const selectedFile = ref(null)
 const fileTypeIcons = { pdf: '📄', docx: '📝', txt: '📃', md: '📑' }
 const fileTypeLabels = { pdf: 'PDF', docx: 'Word', txt: '文本', md: 'Markdown' }
 
+const knowledgeLoaded = ref(false)
+
 onMounted(() => {
   resourcesStore.loadResources()
-  knowledgeStore.loadDocuments()
+})
+
+// 切换到知识库 Tab 时才加载文档（懒加载）
+watch(activeTab, (tab) => {
+  if (tab === 'knowledge' && !knowledgeLoaded.value) {
+    knowledgeStore.loadDocuments()
+    knowledgeLoaded.value = true
+  }
 })
 
 // ===== 学习资料操作 =====

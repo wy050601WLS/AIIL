@@ -158,12 +158,25 @@ class ResourceAskRequest(BaseModel):
 # ===== 知识库文档相关 =====
 
 class DocumentResponse(BaseModel):
-    """知识库文档响应体"""
+    """知识库文档响应体（含全文内容，用于详情页）"""
     id: int
     title: str
     file_type: str
     file_size: int | None = None
     content_text: str | None = None
+    tags: str | None = None
+    visibility: str = "public"
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class DocumentListResponse(BaseModel):
+    """知识库文档列表响应体（不含全文内容，减少传输量）"""
+    id: int
+    title: str
+    file_type: str
+    file_size: int | None = None
     tags: str | None = None
     visibility: str = "public"
     created_at: datetime

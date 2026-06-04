@@ -21,12 +21,13 @@ def create_conversation(data: ConversationCreate, user: User, db: Session) -> Co
     return ConversationResponse.model_validate(conv)
 
 
-def list_conversations(user: User, db: Session) -> list[ConversationResponse]:
-    """获取用户的会话列表，置顶优先，其次按创建时间倒序"""
+def list_conversations(user: User, db: Session, limit: int = 500) -> list[ConversationResponse]:
+    """获取用户的会话列表，置顶优先，其次按创建时间倒序（默认上限 500）"""
     convs = (
         db.query(Conversation)
         .filter(Conversation.user_id == user.id)
         .order_by(Conversation.pinned.desc(), Conversation.created_at.desc())
+        .limit(limit)
         .all()
     )
     return [ConversationResponse.model_validate(c) for c in convs]

@@ -8,8 +8,51 @@
 <script>
 import { marked } from 'marked'
 import { markedHighlight } from 'marked-highlight'
-import hljs from 'highlight.js'
+import hljs from 'highlight.js/lib/core'
+import javascript from 'highlight.js/lib/languages/javascript'
+import typescript from 'highlight.js/lib/languages/typescript'
+import python from 'highlight.js/lib/languages/python'
+import css from 'highlight.js/lib/languages/css'
+import xml from 'highlight.js/lib/languages/xml'
+import java from 'highlight.js/lib/languages/java'
+import cpp from 'highlight.js/lib/languages/cpp'
+import csharp from 'highlight.js/lib/languages/csharp'
+import sql from 'highlight.js/lib/languages/sql'
+import bash from 'highlight.js/lib/languages/bash'
+import json from 'highlight.js/lib/languages/json'
+import markdown from 'highlight.js/lib/languages/markdown'
+import go from 'highlight.js/lib/languages/go'
+import rust from 'highlight.js/lib/languages/rust'
+import yaml from 'highlight.js/lib/languages/yaml'
 import DOMPurify from 'dompurify'
+
+// 注册常用语言（仅打包需要的语言，约 150KB 替代全量 1MB+）
+hljs.registerLanguage('javascript', javascript)
+hljs.registerLanguage('js', javascript)
+hljs.registerLanguage('typescript', typescript)
+hljs.registerLanguage('ts', typescript)
+hljs.registerLanguage('python', python)
+hljs.registerLanguage('py', python)
+hljs.registerLanguage('css', css)
+hljs.registerLanguage('html', xml)
+hljs.registerLanguage('xml', xml)
+hljs.registerLanguage('java', java)
+hljs.registerLanguage('cpp', cpp)
+hljs.registerLanguage('c', cpp)
+hljs.registerLanguage('csharp', csharp)
+hljs.registerLanguage('cs', csharp)
+hljs.registerLanguage('sql', sql)
+hljs.registerLanguage('bash', bash)
+hljs.registerLanguage('sh', bash)
+hljs.registerLanguage('shell', bash)
+hljs.registerLanguage('json', json)
+hljs.registerLanguage('markdown', markdown)
+hljs.registerLanguage('md', markdown)
+hljs.registerLanguage('go', go)
+hljs.registerLanguage('rust', rust)
+hljs.registerLanguage('rs', rust)
+hljs.registerLanguage('yaml', yaml)
+hljs.registerLanguage('yml', yaml)
 
 // 配置 Markdown 渲染器：使用 marked-highlight 扩展启用代码高亮
 marked.use(
@@ -19,7 +62,8 @@ marked.use(
       if (lang && hljs.getLanguage(lang)) {
         return hljs.highlight(code, { language: lang }).value
       }
-      return hljs.highlightAuto(code).value
+      // 未知语言不使用 highlightAuto（避免遍历所有语言）
+      return code
     },
   }),
 )
@@ -58,10 +102,26 @@ const rowStyle = computed(() => {
 const emit = defineEmits(['regenerate', 'edit', 'delete', 'saveCard'])
 const bubbleRef = ref(null)
 
-/** 将 AI 消息的 Markdown 内容渲染为 HTML（用户消息不渲染） */
+// 流式输出时 Markdown 渲染防抖：每 150ms 最多重新解析一次，避免每个 token 都触发全量 parse
+const renderedContent = ref('')
+let renderTimer = null
+
+watch(() => props.content, (val) => {
+  if (props.role === 'user') return
+  if (renderTimer) clearTimeout(renderTimer)
+  // 如果内容为空或加载结束，立即渲染
+  if (!val || !props.loading) {
+    renderedContent.value = DOMPurify.sanitize(marked.parse(val || ''))
+    return
+  }
+  renderTimer = setTimeout(() => {
+    renderedContent.value = DOMPurify.sanitize(marked.parse(val))
+  }, 150)
+}, { immediate: true })
+
 const rendered = computed(() => {
   if (props.role === 'user') return null
-  return DOMPurify.sanitize(marked.parse(props.content || ''))
+  return renderedContent.value
 })
 
 /** 头像显示：用户显示 emoji 头像或「你」，AI 显示「AI」 */
@@ -105,11 +165,22 @@ function injectCopyButtons() {
   })
 }
 
-// AI 消息内容变化时重新注入复制按钮
+// AI 消息内容变化时重新注入复制按钮（防抖，避免流式输出时频繁 DOM 操作）
+let copyBtnTimer = null
 watch(() => props.content, () => {
-  if (props.role === 'assistant') {
+  if (props.role !== 'assistant') return
+  if (copyBtnTimer) clearTimeout(copyBtnTimer)
+  copyBtnTimer = setTimeout(() => {
     nextTick(injectCopyButtons)
-  }
+  }, 300)
+})
+
+// AI 加载结束时立即渲染最终内容并注入复制按钮
+watch(() => props.loading, (val) => {
+  if (val || props.role !== 'assistant') return
+  if (renderTimer) clearTimeout(renderTimer)
+  renderedContent.value = DOMPurify.sanitize(marked.parse(props.content || ''))
+  nextTick(injectCopyButtons)
 })
 
 /** 复制消息内容（AI 消息复制渲染后的纯文本） */

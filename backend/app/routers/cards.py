@@ -38,6 +38,7 @@ def list_cards(user: User = Depends(get_current_user), db: Session = Depends(get
         db.query(KnowledgeCard)
         .filter(KnowledgeCard.user_id == user.id)
         .order_by(KnowledgeCard.created_at.desc())
+        .limit(200)
         .all()
     )
 

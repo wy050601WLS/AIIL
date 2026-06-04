@@ -14,7 +14,7 @@ from app.config import settings
 from app.database import get_db
 from app.models.conversation import KnowledgeDocument
 from app.models.user import User
-from app.schemas.conversation import DocumentResponse, DocumentUpdate
+from app.schemas.conversation import DocumentResponse, DocumentListResponse, DocumentUpdate
 from app.services.document_parser import get_file_type, parse_document
 from app.utils.security import get_current_user
 
@@ -80,13 +80,13 @@ def upload_document(
     return doc
 
 
-@router.get("", response_model=list[DocumentResponse])
+@router.get("", response_model=list[DocumentListResponse])
 def list_documents(
     keyword: str | None = None,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """获取文档列表（公开文档 + 自己的文档），支持关键词搜索标题和标签"""
+    """获取文档列表（公开文档 + 自己的文档），支持关键词搜索标题和标签。不含全文内容。"""
     from sqlalchemy import or_
     query = db.query(KnowledgeDocument).filter(
         or_(KnowledgeDocument.visibility == "public", KnowledgeDocument.user_id == user.id)
@@ -96,7 +96,7 @@ def list_documents(
         query = query.filter(
             (KnowledgeDocument.title.like(q)) | (KnowledgeDocument.tags.like(q))
         )
-    return query.order_by(KnowledgeDocument.created_at.desc()).all()
+    return query.order_by(KnowledgeDocument.created_at.desc()).limit(200).all()
 
 
 @router.get("/{doc_id}", response_model=DocumentResponse)

@@ -55,7 +55,7 @@ def list_resources(
         query = query.filter(LearningResource.category == category)
     if resource_type:
         query = query.filter(LearningResource.resource_type == resource_type)
-    return query.order_by(LearningResource.created_at.desc()).all()
+    return query.order_by(LearningResource.created_at.desc()).limit(200).all()
 
 
 @router.put("/{resource_id}", response_model=ResourceResponse)
@@ -102,10 +102,11 @@ def delete_resource(resource_id: int, user: User = Depends(get_current_user), db
 
 @router.post("/ask")
 @limiter.limit("10/minute")
-def ask_resources(data: ResourceAskRequest, request: Request, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+async def ask_resources(data: ResourceAskRequest, request: Request, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """AI 辅助搜索学习资料
 
     将用户的问题和所有资料的标题/描述发送给 AI，让 AI 分析哪些资料与问题相关并给出建议。
+    使用异步 httpx 避免阻塞事件循环。
     """
     # 加载公开资料 + 自己的资料（限制最近 100 条避免 prompt 过长）
     from sqlalchemy import or_
@@ -136,7 +137,6 @@ def ask_resources(data: ResourceAskRequest, request: Request, user: User = Depen
 
     context = "\n".join(resource_summaries)
 
-    # 构造 AI 请求
     system_prompt = (
         "## 角色\n"
         "你是「AI 智慧学习助手」的资料搜索模块。用户有一个学习资料库，你需要根据用户的问题，"
@@ -170,8 +170,8 @@ def ask_resources(data: ResourceAskRequest, request: Request, user: User = Depen
     }
 
     try:
-        with httpx.Client(timeout=60.0) as client:
-            response = client.post(url, headers=headers, json=payload)
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            response = await client.post(url, headers=headers, json=payload)
             response.raise_for_status()
             result = response.json()
             answer = result["choices"][0]["message"]["content"]

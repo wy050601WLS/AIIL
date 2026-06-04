@@ -338,8 +338,8 @@ BUILTIN_TEMPLATES = [
 ]
 
 
-def _ensure_builtin_templates(db: Session) -> None:
-    """确保所有内置模板都存在于数据库中，缺失的自动补全"""
+def ensure_builtin_templates(db: Session) -> None:
+    """确保所有内置模板都存在于数据库中，缺失的自动补全。启动时调用一次。"""
     existing_titles = {
         t.title for t in
         db.query(PromptTemplate.title).filter(PromptTemplate.is_builtin == True).all()
@@ -362,7 +362,6 @@ def _ensure_builtin_templates(db: Session) -> None:
 @router.get("", response_model=list[TemplateResponse])
 def list_templates(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """获取模板列表：内置模板 + 当前用户的自建模板，内置优先"""
-    _ensure_builtin_templates(db)
     return (
         db.query(PromptTemplate)
         .filter(

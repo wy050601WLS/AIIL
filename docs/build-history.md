@@ -754,3 +754,37 @@ AIIL/
 ### AC-4：project-plan.md 格式优化
 - 从冗长 6 字段逐条列表改为精简 5 列表格
 - 去掉所有"无"的冗余字段，篇幅缩减约 60%
+
+---
+
+## 阶段三十一：功能体验优化
+
+优化 AI 对话、资料管理和列表交互体验。
+
+### AD-1：AI 打字指示器
+- ChatMessage 新增打字动画：当 `loading && !content && role === 'assistant'` 时显示三个跳动的点
+- CSS 动画 `typing-bounce`，三个 dot 依次延迟
+
+### AD-2：代码块复制按钮
+- ChatMessage 的 `watch(content)` 在 AI 消息内容变化后，通过 DOM 操作给每个 `<pre>` 注入复制按钮
+- 按钮定位在代码块右上角，hover 时显示，点击复制纯文本
+
+### AD-3：欢迎页快捷提示
+- Chat.vue 空消息时显示 4 个可点击的提示卡片（解释概念、练习题、分析代码、总结文档）
+- 点击后自动发送对应 prompt
+
+### AD-4：滚动到底部按钮
+- 新增 `isAtBottom` 状态跟踪，距底部 50px 内视为在底部
+- 不在底部时显示浮动 ↓ 按钮，点击平滑滚动
+- 修复自动滚动：仅在用户已在底部时才自动滚到底，避免与用户手动上滚冲突
+
+### AD-5：AI 搜索结果 Markdown 渲染
+- Resources.vue AI 回答改用 `marked.parse` + `DOMPurify.sanitize` 渲染 Markdown
+- 新增「相关资料」区域，展示 AI 搜索返回的关联资料列表
+- 支持标题、列表、代码块等 Markdown 格式
+
+### AD-6：列表排序功能
+- Resources 学习资料筛选栏新增排序：最新优先 / 最早优先 / 标题 A-Z
+- Resources 知识库文档搜索栏新增排序：最新优先 / 最早优先
+- Cards 标签栏旁新增排序：最新优先 / 最早优先
+- 纯前端 computed 排序，不改 API

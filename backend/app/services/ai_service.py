@@ -40,13 +40,13 @@ def save_user_message(conversation_id: int, content: str, db: Session, images: l
     db.commit()
 
 
-def load_history(conversation_id: int, db: Session) -> tuple[list[dict], Conversation]:
-    """加载会话的完整对话历史
+def load_history(conversation_id: int, db: Session, max_messages: int = 50) -> tuple[list[dict], Conversation]:
+    """加载会话的对话历史（限制最近 N 条，避免上下文过长）
 
     返回 OpenAI 兼容的消息列表格式：
     - 首条为 system prompt（统一使用配置中的默认提示词）
     - 纯文本消息直接返回 {"role": ..., "content": ...}
-    - 含图片的消息转为多模态格式：content 为数组，包含 text 和 image_url 类型
+    - 含图片的消息转为多模态格式（仅最近 10 条含图片，避免 prompt 膨胀）
 
     Returns:
         (messages_history, conversation_object) 元组
@@ -58,18 +58,25 @@ def load_history(conversation_id: int, db: Session) -> tuple[list[dict], Convers
         .order_by(Message.created_at.asc())
         .all()
     )
+    # 只取最近 max_messages 条
+    if len(messages) > max_messages:
+        messages = messages[-max_messages:]
+
     history = []
     history.append({"role": "system", "content": settings.DEFAULT_SYSTEM_PROMPT})
-    for m in messages:
+    for i, m in enumerate(messages):
         if not m.content:
             continue
         if m.images:
-            # 多模态消息：将图片转为 OpenAI vision 格式
+            # 仅最近 10 条消息保留图片，避免 prompt 膨胀
             img_list = json.loads(m.images)
-            parts = [{"type": "text", "text": m.content}]
-            for img_url in img_list:
-                parts.append({"type": "image_url", "image_url": {"url": img_url}})
-            history.append({"role": m.role, "content": parts})
+            if len(messages) - i <= 10:
+                parts = [{"type": "text", "text": m.content}]
+                for img_url in img_list:
+                    parts.append({"type": "image_url", "image_url": {"url": img_url}})
+                history.append({"role": m.role, "content": parts})
+            else:
+                history.append({"role": m.role, "content": m.content})
         else:
             history.append({"role": m.role, "content": m.content})
     return history, conv

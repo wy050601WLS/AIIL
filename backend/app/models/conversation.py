@@ -32,6 +32,10 @@ class Conversation(Base):
     # 级联删除：会话删除时自动删除所有关联消息
     messages = relationship("Message", back_populates="conversation", cascade="all, delete-orphan")
 
+    __table_args__ = (
+        Index("ix_conversations_user_pinned_created", "user_id", "pinned", "created_at"),
+    )
+
 
 class Message(Base):
     """消息表模型
@@ -89,6 +93,10 @@ class PromptTemplate(Base):
     is_builtin = Column(Boolean, default=False)                          # 是否为系统内置模板
     created_at = Column(DateTime, default=datetime.now)
 
+    __table_args__ = (
+        Index("ix_templates_builtin_user", "is_builtin", "user_id"),
+    )
+
 
 class LearningResource(Base):
     """学习资料表模型
@@ -110,6 +118,10 @@ class LearningResource(Base):
     visibility = Column(String(10), default="public")                    # 可见性：public/private/draft
     created_at = Column(DateTime, default=datetime.now)
 
+    __table_args__ = (
+        Index("ix_resources_visibility_user", "visibility", "user_id"),
+    )
+
 
 class KnowledgeDocument(Base):
     """知识库文档表模型
@@ -130,3 +142,7 @@ class KnowledgeDocument(Base):
     tags = Column(String(500), nullable=True)                            # 标签，逗号分隔
     visibility = Column(String(10), default="public")                    # 可见性：public/private/draft
     created_at = Column(DateTime, default=datetime.now)
+
+    __table_args__ = (
+        Index("ix_knowledgedocs_visibility_user", "visibility", "user_id"),
+    )

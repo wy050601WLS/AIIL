@@ -27,30 +27,23 @@ const editingId = ref(null)    // 正在重命名的会话 ID
 const editTitle = ref('')      // 重命名输入框的值
 const searchQuery = ref('')    // 会话搜索关键词
 
-/** 根据搜索关键词过滤会话列表（null 表示无搜索，使用原始列表） */
-const searchFiltered = computed(() => {
-  if (!searchQuery.value.trim()) return null
-  const q = searchQuery.value.toLowerCase()
+// 一次性完成搜索 + 归档过滤 + 置顶/普通分组（避免三次独立 filter）
+const partitioned = computed(() => {
   let list = chatStore.conversations
   if (!chatStore.showArchived) {
     list = list.filter(c => !c.archived)
   } else {
     list = list.filter(c => c.archived)
   }
-  return list.filter(c => c.title.toLowerCase().includes(q))
+  if (searchQuery.value.trim()) {
+    const q = searchQuery.value.toLowerCase()
+    list = list.filter(c => c.title.toLowerCase().includes(q))
+  }
+  return { pinned: list.filter(c => c.pinned), normal: list.filter(c => !c.pinned) }
 })
 
-/** 置顶会话列表（优先显示搜索结果，否则用 store 的过滤列表） */
-const pinnedList = computed(() => {
-  const src = searchFiltered.value ?? chatStore.filteredConversations
-  return src.filter(c => c.pinned)
-})
-
-/** 普通会话列表 */
-const normalList = computed(() => {
-  const src = searchFiltered.value ?? chatStore.filteredConversations
-  return src.filter(c => !c.pinned)
-})
+const pinnedList = computed(() => partitioned.value.pinned)
+const normalList = computed(() => partitioned.value.normal)
 
 /** 已归档会话数量（用于显示角标） */
 const archivedCount = computed(() => chatStore.conversations.filter(c => c.archived).length)
