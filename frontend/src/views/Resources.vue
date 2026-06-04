@@ -9,6 +9,8 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessageBox, ElMessage } from 'element-plus'
+import { marked } from 'marked'
+import DOMPurify from 'dompurify'
 import { useResourcesStore } from '../stores/resources'
 import { useKnowledgeStore } from '../stores/knowledge'
 
@@ -22,6 +24,7 @@ const activeTab = ref('resources')
 const filterCategory = ref('')
 const filterType = ref('')
 const filterKeyword = ref('')
+const sortBy = ref('newest')
 const askQuestion = ref('')
 
 const dialogVisible = ref(false)
@@ -55,11 +58,27 @@ const filteredResources = computed(() => {
       (r.tags || '').toLowerCase().includes(q)
     )
   }
+  if (sortBy.value === 'newest') list = [...list].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+  else if (sortBy.value === 'oldest') list = [...list].sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+  else if (sortBy.value === 'az') list = [...list].sort((a, b) => a.title.localeCompare(b.title))
   return list
 })
 
+const renderedAiAnswer = computed(() => {
+  if (!resourcesStore.aiAnswer) return ''
+  return DOMPurify.sanitize(marked.parse(resourcesStore.aiAnswer))
+})
+
 // ===== 知识库相关 =====
+const docSortBy = ref('newest')
 const searchKeyword = ref('')
+
+const sortedDocuments = computed(() => {
+  const list = [...knowledgeStore.documents]
+  if (docSortBy.value === 'newest') list.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+  else if (docSortBy.value === 'oldest') list.sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+  return list
+})
 const uploadDialogVisible = ref(false)
 const uploadTitle = ref('')
 const uploadTags = ref('')
@@ -138,6 +157,7 @@ function clearFilters() {
   filterCategory.value = ''
   filterType.value = ''
   filterKeyword.value = ''
+  sortBy.value = 'newest'
 }
 
 // ===== 知识库操作 =====
@@ -265,7 +285,14 @@ function formatSize(bytes) {
         </div>
         <div v-if="resourcesStore.aiAnswer" class="ai-answer">
           <div class="ai-answer-label">AI 分析</div>
-          <div class="ai-answer-text">{{ resourcesStore.aiAnswer }}</div>
+          <div class="ai-answer-text markdown-body" v-html="renderedAiAnswer"></div>
+          <div v-if="resourcesStore.aiResults.length > 0" class="ai-related">
+            <div class="ai-related-label">相关资料</div>
+            <div v-for="r in resourcesStore.aiResults" :key="r.id" class="ai-related-item">
+              <span class="ai-related-title">{{ r.title }}</span>
+              <span v-if="r.category" class="resource-category">{{ r.category }}</span>
+            </div>
+          </div>
           <el-button text size="small" @click="resourcesStore.clearAiResults()">收起</el-button>
         </div>
       </div>
@@ -279,6 +306,11 @@ function formatSize(bytes) {
           <el-option v-for="t in types" :key="t.value" :label="t.label" :value="t.value" />
         </el-select>
         <input v-model="filterKeyword" class="keyword-input" placeholder="搜索标题/描述/标签" />
+        <el-select v-model="sortBy" size="small" style="width: 120px;">
+          <el-option label="最新优先" value="newest" />
+          <el-option label="最早优先" value="oldest" />
+          <el-option label="标题 A-Z" value="az" />
+        </el-select>
         <el-button text size="small" @click="clearFilters">重置</el-button>
         <div class="filter-spacer"></div>
         <el-button type="primary" size="small" @click="openAddDialog">+ 添加资料</el-button>
@@ -366,18 +398,22 @@ function formatSize(bytes) {
         />
         <el-button @click="handleSearch">搜索</el-button>
         <el-button text @click="clearSearch">重置</el-button>
+        <el-select v-model="docSortBy" size="small" style="width: 120px;">
+          <el-option label="最新优先" value="newest" />
+          <el-option label="最早优先" value="oldest" />
+        </el-select>
         <div class="search-spacer"></div>
         <el-button type="primary" @click="openUploadDialog">+ 上传文档</el-button>
       </div>
 
       <!-- 文档列表 -->
       <div v-if="knowledgeStore.loading && knowledgeStore.documents.length === 0" class="empty">加载中...</div>
-      <div v-else-if="knowledgeStore.documents.length === 0" class="empty">
+      <div v-else-if="sortedDocuments.length === 0" class="empty">
         {{ searchKeyword ? '没有匹配的文档' : '还没有文档，点击上方「+ 上传文档」开始' }}
       </div>
 
       <div class="resources-grid">
-        <div v-for="doc in knowledgeStore.documents" :key="doc.id" class="resource-item doc-clickable" @click="goToDetail(doc.id)">
+        <div v-for="doc in sortedDocuments" :key="doc.id" class="resource-item doc-clickable" @click="goToDetail(doc.id)">
           <div class="resource-header-row">
             <span class="doc-icon">{{ fileTypeIcons[doc.file_type] || '📄' }}</span>
             <span class="resource-title">{{ doc.title }}</span>
@@ -533,9 +569,68 @@ function formatSize(bytes) {
   font-size: var(--text-base);
   line-height: 1.7;
   color: var(--text-primary);
-  white-space: pre-wrap;
   word-break: break-word;
   margin-bottom: var(--space-sm);
+}
+
+.ai-related {
+  margin-top: var(--space-sm);
+  padding-top: var(--space-sm);
+  border-top: 1px solid var(--border);
+}
+
+.ai-related-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+
+.ai-related-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: 4px 0;
+}
+
+.ai-related-title {
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+}
+
+.ai-answer-text :deep(h1),
+.ai-answer-text :deep(h2),
+.ai-answer-text :deep(h3) {
+  margin: 12px 0 6px;
+  font-weight: 600;
+}
+.ai-answer-text :deep(h1) { font-size: 1.3em; }
+.ai-answer-text :deep(h2) { font-size: 1.15em; }
+.ai-answer-text :deep(h3) { font-size: 1.05em; }
+.ai-answer-text :deep(p) { margin: 6px 0; }
+.ai-answer-text :deep(ul),
+.ai-answer-text :deep(ol) { padding-left: 20px; margin: 6px 0; }
+.ai-answer-text :deep(li) { margin: 3px 0; }
+.ai-answer-text :deep(code) {
+  background: var(--bg-tertiary);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.9em;
+}
+.ai-answer-text :deep(pre) {
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  overflow-x: auto;
+  margin: 8px 0;
+}
+.ai-answer-text :deep(pre code) { background: none; padding: 0; }
+.ai-answer-text :deep(blockquote) {
+  border-left: 3px solid var(--accent);
+  padding-left: 12px;
+  margin: 6px 0;
+  color: var(--text-secondary);
 }
 
 /* ===== 筛选栏 ===== */

@@ -19,6 +19,15 @@ const userStore = useUserStore()
 const cardsStore = useCardsStore()
 const sidebarVisible = ref(false)      // 侧边栏是否显示（移动端控制）
 const messagesAreaRef = ref(null)      // 消息区域 DOM 引用（用于自动滚动）
+const isAtBottom = ref(true)           // 是否在底部（控制滚动到底部按钮）
+
+// 欢迎页快捷提示
+const promptSuggestions = [
+  { icon: '💡', text: '帮我解释一个概念', prompt: '请帮我解释一个概念，我会告诉你具体是什么' },
+  { icon: '📝', text: '给我出几道练习题', prompt: '请给我出几道练习题，我会告诉你科目和知识点' },
+  { icon: '🔍', text: '帮我分析一段代码', prompt: '请帮我分析一段代码，我会贴出代码内容' },
+  { icon: '📖', text: '总结一篇文档', prompt: '请帮我总结一篇文档的要点，我会提供文档内容' },
+]
 
 // 从用户偏好中读取字体大小和消息密度
 const fontSize = computed(() => userStore.preferences?.fontSize || 15)
@@ -33,29 +42,42 @@ function scrollToBottom() {
   })
 }
 
-/** 滚动事件处理：滚动到顶部时加载更多历史消息 */
+/** 检查是否在底部（距底 50px 内视为在底部） */
+function checkAtBottom() {
+  const el = messagesAreaRef.value
+  if (!el) return
+  isAtBottom.value = el.scrollHeight - el.scrollTop - el.clientHeight < 50
+}
+
+/** 平滑滚动到底部（用户点击按钮时） */
+function smoothScrollToBottom() {
+  messagesAreaRef.value?.scrollTo({ top: messagesAreaRef.value.scrollHeight, behavior: 'smooth' })
+}
+
+/** 滚动事件处理 */
 async function handleScroll() {
+  checkAtBottom()
   const el = messagesAreaRef.value
   if (!el || !chatStore.hasMore || chatStore.loadingMore) return
-  // 距顶部 50px 时触发加载
   if (el.scrollTop < 50) {
     const prevHeight = el.scrollHeight
     await chatStore.loadMoreMessages()
-    // 保持滚动位置不变（加载旧消息后页面高度增加，需补偿偏移）
     nextTick(() => {
       el.scrollTop = el.scrollHeight - prevHeight
     })
   }
 }
 
-// 监听消息数量变化和最后一条消息内容变化，自动滚动到底部
+// 新消息追加时自动滚动（仅在用户已在底部时）
 watch(() => chatStore.messages.length, (newLen, oldLen) => {
-  // 新消息追加到底部时才自动滚动（加载历史消息时不滚动）
-  if (newLen > oldLen && !chatStore.loadingMore) {
+  if (newLen > oldLen && !chatStore.loadingMore && isAtBottom.value) {
     scrollToBottom()
   }
 })
-watch(() => chatStore.messages[chatStore.messages.length - 1]?.content, scrollToBottom)
+// 流式输出时自动滚动（仅在用户已在底部时）
+watch(() => chatStore.messages[chatStore.messages.length - 1]?.content, () => {
+  if (isAtBottom.value) scrollToBottom()
+})
 
 onMounted(() => {
   chatStore.loadConversations()
@@ -106,6 +128,11 @@ async function handleRegenerate() {
 /** 停止 AI 流式生成 */
 function handleStop() {
   chatStore.stopStreaming()
+}
+
+/** 点击欢迎页快捷提示 */
+function handleSuggestion(prompt) {
+  chatStore.sendMessage(prompt)
 }
 
 /** 编辑消息（弹出输入框，保存后同步更新） */
@@ -189,6 +216,18 @@ async function handleSaveCard(msg) {
         <div v-if="chatStore.loadingMore" class="loading-more">加载更多消息...</div>
         <div v-if="chatStore.messages.length === 0" class="welcome">
           <h2>有什么可以帮你的？</h2>
+          <p class="welcome-sub">选择一个话题开始，或直接输入你的问题</p>
+          <div class="suggestions">
+            <button
+              v-for="s in promptSuggestions"
+              :key="s.text"
+              class="suggestion-card"
+              @click="handleSuggestion(s.prompt)"
+            >
+              <span class="suggestion-icon">{{ s.icon }}</span>
+              <span class="suggestion-text">{{ s.text }}</span>
+            </button>
+          </div>
         </div>
 
         <ChatMessage
@@ -208,6 +247,16 @@ async function handleSaveCard(msg) {
           @save-card="() => handleSaveCard(msg)"
         />
       </div>
+
+      <button
+        v-if="!isAtBottom && chatStore.messages.length > 0"
+        class="scroll-bottom-btn"
+        @click="smoothScrollToBottom"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M6 9l6 6 6-6" />
+        </svg>
+      </button>
 
       <ChatInput :loading="chatStore.loading" @send="handleSend" @stop="handleStop" />
     </main>
@@ -278,6 +327,72 @@ async function handleSaveCard(msg) {
   font-size: 24px;
   color: var(--text-secondary);
   margin-bottom: 8px;
+}
+
+.welcome-sub {
+  font-size: var(--text-base);
+  color: var(--text-muted);
+  margin-bottom: 24px;
+}
+
+.suggestions {
+  display: flex;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+  justify-content: center;
+  max-width: 500px;
+}
+
+.suggestion-card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  color: var(--text-primary);
+  font-size: var(--text-sm);
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.suggestion-card:hover {
+  border-color: var(--accent);
+  box-shadow: var(--shadow);
+}
+
+.suggestion-icon {
+  font-size: 18px;
+}
+
+.suggestion-text {
+  white-space: nowrap;
+}
+
+.scroll-bottom-btn {
+  position: fixed;
+  bottom: 120px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: var(--shadow);
+  transition: opacity 0.15s;
+  z-index: 10;
+}
+
+.scroll-bottom-btn:hover {
+  color: var(--accent);
+  border-color: var(--accent);
 }
 
 /* 移动端 */

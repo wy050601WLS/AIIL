@@ -12,6 +12,7 @@ import { useCardsStore } from '../stores/cards'
 const cardsStore = useCardsStore()
 
 const filterTag = ref('')  // 当前筛选的标签（空表示全部）
+const sortBy = ref('newest')
 
 // 编辑状态
 const editingId = ref(null)    // 正在编辑的卡片 ID
@@ -20,11 +21,16 @@ const editTags = ref('')       // 编辑中的标签
 
 /** 根据标签关键词过滤卡片列表 */
 const filteredCards = computed(() => {
-  if (!filterTag.value.trim()) return cardsStore.cards
-  const q = filterTag.value.toLowerCase()
-  return cardsStore.cards.filter(c =>
-    (c.tags || '').toLowerCase().includes(q) || c.content.toLowerCase().includes(q)
-  )
+  let list = cardsStore.cards
+  if (filterTag.value.trim()) {
+    const q = filterTag.value.toLowerCase()
+    list = list.filter(c =>
+      (c.tags || '').toLowerCase().includes(q) || c.content.toLowerCase().includes(q)
+    )
+  }
+  if (sortBy.value === 'newest') list = [...list].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+  else if (sortBy.value === 'oldest') list = [...list].sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+  return list
 })
 
 /** 提取所有卡片中的不重复标签（用于标签筛选栏） */
@@ -95,21 +101,28 @@ function tagList(tags) {
       <p class="subtitle">收藏 AI 回复中的精华内容，随时回顾</p>
     </div>
 
-    <div v-if="allTags.length > 0" class="tag-bar">
-      <el-button
-        text
-        size="small"
-        :class="{ 'tag-active': !filterTag }"
-        @click="filterTag = ''"
-      >全部</el-button>
-      <el-button
-        v-for="tag in allTags"
-        :key="tag"
-        text
-        size="small"
-        :class="{ 'tag-active': filterTag === tag }"
-        @click="filterTag = tag"
-      >{{ tag }}</el-button>
+    <div class="toolbar-row">
+      <div v-if="allTags.length > 0" class="tag-bar">
+        <el-button
+          text
+          size="small"
+          :class="{ 'tag-active': !filterTag }"
+          @click="filterTag = ''"
+        >全部</el-button>
+        <el-button
+          v-for="tag in allTags"
+          :key="tag"
+          text
+          size="small"
+          :class="{ 'tag-active': filterTag === tag }"
+          @click="filterTag = tag"
+        >{{ tag }}</el-button>
+      </div>
+      <div class="toolbar-spacer"></div>
+      <el-select v-model="sortBy" size="small" style="width: 120px;">
+        <el-option label="最新优先" value="newest" />
+        <el-option label="最早优先" value="oldest" />
+      </el-select>
     </div>
 
     <div v-if="cardsStore.loading && cardsStore.cards.length === 0" class="empty">
@@ -179,11 +192,21 @@ function tagList(tags) {
   margin-bottom: var(--space-lg);
 }
 
+.toolbar-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-bottom: 20px;
+}
+
 .tag-bar {
   display: flex;
   gap: var(--space-xs);
   flex-wrap: wrap;
-  margin-bottom: 20px;
+}
+
+.toolbar-spacer {
+  flex: 1;
 }
 
 .tag-active {

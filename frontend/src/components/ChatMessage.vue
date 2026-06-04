@@ -29,7 +29,7 @@ marked.use({ breaks: true, gfm: true })
 </script>
 
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, ref, watch, nextTick } from 'vue'
 import { ElMessage } from 'element-plus'
 import { useUserStore } from '../stores/user'
 
@@ -84,6 +84,34 @@ const bubbleStyle = computed(() => ({
   fontSize: props.fontSize + 'px',
 }))
 
+/** 给代码块注入复制按钮 */
+function injectCopyButtons() {
+  if (!bubbleRef.value) return
+  const pres = bubbleRef.value.querySelectorAll('pre')
+  pres.forEach(pre => {
+    if (pre.querySelector('.code-copy-btn')) return
+    pre.style.position = 'relative'
+    const btn = document.createElement('button')
+    btn.className = 'code-copy-btn'
+    btn.textContent = '复制'
+    btn.addEventListener('click', () => {
+      const code = pre.querySelector('code')?.textContent || pre.textContent
+      navigator.clipboard.writeText(code).then(() => {
+        btn.textContent = '已复制'
+        setTimeout(() => { btn.textContent = '复制' }, 1500)
+      })
+    })
+    pre.appendChild(btn)
+  })
+}
+
+// AI 消息内容变化时重新注入复制按钮
+watch(() => props.content, () => {
+  if (props.role === 'assistant') {
+    nextTick(injectCopyButtons)
+  }
+})
+
 /** 复制消息内容（AI 消息复制渲染后的纯文本） */
 function copyContent() {
   let text = props.content
@@ -113,6 +141,11 @@ function copyContent() {
       </div>
       <div v-if="role === 'user'" class="content" v-text="content"></div>
       <div v-else class="content markdown-body" v-html="rendered"></div>
+      <div v-if="loading && !content && role === 'assistant'" class="typing-indicator">
+        <span class="typing-dot"></span>
+        <span class="typing-dot"></span>
+        <span class="typing-dot"></span>
+      </div>
       <div v-if="!loading && content" class="msg-actions">
         <el-button text size="small" class="msg-action-btn" @click="copyContent">复制</el-button>
         <el-button v-if="role === 'user'" text size="small" class="msg-action-btn" @click="emit('edit')">编辑</el-button>
@@ -347,6 +380,59 @@ function copyContent() {
   border: none;
   border-top: 1px solid var(--border);
   margin: 16px 0;
+}
+
+/* 打字指示器 */
+.typing-indicator {
+  display: flex;
+  gap: 4px;
+  padding: 4px 0;
+}
+
+.typing-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  animation: typing-bounce 1.4s infinite ease-in-out;
+}
+
+.typing-dot:nth-child(2) { animation-delay: 0.16s; }
+.typing-dot:nth-child(3) { animation-delay: 0.32s; }
+
+@keyframes typing-bounce {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+  30% { transform: translateY(-4px); opacity: 1; }
+}
+
+/* 代码块复制按钮 */
+.markdown-body :deep(pre) {
+  position: relative;
+}
+
+.markdown-body :deep(.code-copy-btn) {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text-muted);
+  font-size: 11px;
+  padding: 2px 8px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s;
+  font-family: inherit;
+}
+
+.markdown-body :deep(pre:hover .code-copy-btn) {
+  opacity: 1;
+}
+
+.markdown-body :deep(.code-copy-btn:hover) {
+  color: var(--accent);
+  border-color: var(--accent);
 }
 
 @media (max-width: 768px) {
