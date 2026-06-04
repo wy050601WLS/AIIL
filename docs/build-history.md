@@ -788,3 +788,36 @@ AIIL/
 - Resources 知识库文档搜索栏新增排序：最新优先 / 最早优先
 - Cards 标签栏旁新增排序：最新优先 / 最早优先
 - 纯前端 computed 排序，不改 API
+
+---
+
+## 阶段三十二：全面性能优化
+
+前端体积、流式对话、后端查询、懒加载全方位优化。
+
+### AE-1：前端构建体积优化
+- Element Plus 改为按需导入（unplugin-auto-import + unplugin-vue-components），主包从 996KB 降至 19KB
+- highlight.js 改为核心导入 + 15 种常用语言注册，Chat 分包从 946KB 降至 49KB
+- Vite 配置 manualChunks 拆分 vendor-vue / vendor-hljs / vendor-markdown
+- 总 JS 体积从 ~1942KB 降至 ~666KB（-66%）
+
+### AE-2：流式对话性能优化
+- Markdown 渲染防抖：流式输出时每 150ms 最多重新解析一次，避免每个 token 触发全量 `marked.parse` + `DOMPurify.sanitize`
+- 代码块复制按钮注入防抖：300ms 延迟，避免流式输出时频繁 DOM 操作
+- AI 加载结束时立即渲染最终内容并注入复制按钮
+
+### AE-3：后端异步与模板初始化
+- `/resources/ask` 改为 `async def` + `httpx.AsyncClient`，不再阻塞 FastAPI 事件循环
+- 内置模板初始化从每次 `GET /templates` 请求移到 `main.py` 启动事件
+
+### AE-4：后端查询优化
+- AI 上下文窗口：`load_history` 限制最近 50 条消息，仅最近 10 条保留图片数据
+- 列表查询安全上限：conversations 500 条，cards/resources/knowledge 200 条
+- 新增 4 个复合索引：`(user_id, pinned, created_at)` / `(is_builtin, user_id)` / `(visibility, user_id)` × 2
+- 知识库列表接口新增 `DocumentListResponse` schema，排除 `content_text` 大文本字段
+
+### AE-5：前端懒加载与冗余请求优化
+- 模板缓存：`loadTemplates` 已加载则跳过重复请求
+- profile 加载去重：`profileLoaded` 标志避免 store 初始化和 Settings 页重复请求
+- Resources 页按 Tab 懒加载：切换到知识库 Tab 时才加载文档列表
+- Sidebar 过滤合并：searchFiltered + pinnedList + normalList 三次 filter 合并为单次遍历
