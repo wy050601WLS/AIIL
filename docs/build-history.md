@@ -725,3 +725,32 @@ AIIL/
 ### AB-6：知识库路由参数校验
 - KnowledgeDetail.vue onMounted 添加 docId 校验（NaN 检查）
 - 无效 ID 时显示错误提示并跳转回资源列表页
+
+---
+
+## 阶段三十：页面样式排版统一
+
+全面优化前端样式，建立设计系统，消除重复 CSS。
+
+### AC-1：设计变量体系
+- style.css 新增间距变量（--space-xs/sm/md/lg/xl）、字号变量（--text-xs/sm/base/lg/xl/2xl）、页面宽度变量（--page-max-width, --auth-card-width）
+- 所有 8 个页面统一使用变量替代硬编码像素值
+
+### AC-2：全局工具类
+- `.page-wrapper` 统一页面容器（max-width + padding + min-height）
+- `.page-header` 标题区域（h1 + subtitle）
+- `.empty-state` 空状态/加载提示
+- `.text-input` 统一自定义输入框样式
+- `.tag-chip` / `.tag-chip--accent` 标签样式（默认灰色 / 强调色变体）
+- 移动端 `.page-wrapper` 自动切换为 `20px 16px` 内边距
+
+### AC-3：页面重构
+- Login/Register：用 CSS 变量替代硬编码，添加 480px 响应式（卡片宽度 100%）
+- Settings：添加 480px 响应式（头像网格从 8 列缩减为 4 列）
+- Cards/Dashboard/Resources/KnowledgeDetail：全部用全局变量替换硬编码间距和字号
+- Chat：删除死代码 `.welcome p` 规则
+- tag-chip 颜色统一：Resources 使用默认灰色，Cards/KnowledgeDetail 使用 accent 变体
+
+### AC-4：project-plan.md 格式优化
+- 从冗长 6 字段逐条列表改为精简 5 列表格
+- 去掉所有"无"的冗余字段，篇幅缩减约 60%
