@@ -66,9 +66,14 @@ def get_stats(user: User = Depends(get_current_user), db: Session = Depends(get_
     active_days = len([d for d in daily_messages if d.count > 0])
 
     # 热门标签：拆分所有卡片的 tags 字段，统计出现次数 Top 10
-    cards = db.query(KnowledgeCard.tags).filter(
-        KnowledgeCard.user_id == user.id, KnowledgeCard.tags.isnot(None)
-    ).all()
+    # 仅查询 tags 列（不加载整行），限制最近 500 条卡片避免内存过大
+    cards = (
+        db.query(KnowledgeCard.tags)
+        .filter(KnowledgeCard.user_id == user.id, KnowledgeCard.tags.isnot(None))
+        .order_by(KnowledgeCard.created_at.desc())
+        .limit(500)
+        .all()
+    )
     tag_counter: Counter = Counter()
     for (tags_str,) in cards:
         for tag in tags_str.split(","):

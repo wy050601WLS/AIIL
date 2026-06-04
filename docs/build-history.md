@@ -657,3 +657,36 @@ AIIL/
 
 ### Z-3：种子数据更新
 - seed_data.py 资料和文档混合使用不同可见性值，便于测试过滤逻辑
+
+---
+
+## 阶段二十八：质量修复与安全加固
+
+全面审计项目，修复安全、性能和代码质量问题。
+
+### AA-1：安全修复
+- 创建 `backend/.env.example` 环境变量模板，新开发者可直接参考
+- `.gitignore` 新增 `backend/test.db` 和 `backend/uploads/` 排除规则
+- `docker-compose.yml` 移除废弃的 `version: "3.8"` 字段
+
+### AA-2：Bug 修复
+- `streamChat` 流结束后处理缓冲区剩余数据，防止最后 chunk 丢失
+- `exportConversation` 添加 HTTP 响应状态检查，错误时抛出异常
+
+### AA-3：性能优化
+- Dashboard 标签统计限制最近 500 条卡片，避免全量加载到内存
+
+### AA-4：marked 高亮 API 升级
+- 安装 `marked-highlight` 扩展，替代已废弃的 `marked.setOptions({ highlight })` 写法
+- ChatMessage.vue 改用 `marked.use(markedHighlight({...}))` 新 API
+
+### AA-5：AI 端点独立限流
+- 新增 `app/limiter.py` 共享限流器模块
+- `/chat` 端点限流 20 次/分钟
+- `/resources/ask` 端点限流 10 次/分钟
+- `main.py` 改为从 `app.limiter` 导入 limiter 实例
+
+### AA-6：文档更新
+- README 更新完整功能清单和环境变量表
+- project-overview.md 全面更新：ER 图、API 列表、文件清单、已知问题
+- 可见性标签 CSS 提取到全局 style.css，消除组件间重复

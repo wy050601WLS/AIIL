@@ -7,19 +7,24 @@
 -->
 <script>
 import { marked } from 'marked'
+import { markedHighlight } from 'marked-highlight'
 import hljs from 'highlight.js'
 
-// 配置 Markdown 渲染器：启用代码高亮、换行转 <br>、GFM 语法
-marked.setOptions({
-  highlight(code, lang) {
-    if (lang && hljs.getLanguage(lang)) {
-      return hljs.highlight(code, { language: lang }).value
-    }
-    return hljs.highlightAuto(code).value
-  },
-  breaks: true,
-  gfm: true,
-})
+// 配置 Markdown 渲染器：使用 marked-highlight 扩展启用代码高亮
+marked.use(
+  markedHighlight({
+    langPrefix: 'hljs language-',
+    highlight(code, lang) {
+      if (lang && hljs.getLanguage(lang)) {
+        return hljs.highlight(code, { language: lang }).value
+      }
+      return hljs.highlightAuto(code).value
+    },
+  }),
+)
+
+// 启用换行转 <br> 和 GFM 语法
+marked.use({ breaks: true, gfm: true })
 </script>
 
 <script setup>

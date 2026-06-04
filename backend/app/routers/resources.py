@@ -6,11 +6,12 @@
 
 import json
 import httpx
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.database import get_db
+from app.limiter import limiter
 from app.models.conversation import LearningResource
 from app.models.user import User
 from app.schemas.conversation import ResourceCreate, ResourceUpdate, ResourceResponse, ResourceAskRequest
@@ -100,7 +101,8 @@ def delete_resource(resource_id: int, user: User = Depends(get_current_user), db
 
 
 @router.post("/ask")
-def ask_resources(data: ResourceAskRequest, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+@limiter.limit("10/minute")
+def ask_resources(data: ResourceAskRequest, request: Request, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """AI 辅助搜索学习资料
 
     将用户的问题和所有资料的标题/描述发送给 AI，让 AI 分析哪些资料与问题相关并给出建议。

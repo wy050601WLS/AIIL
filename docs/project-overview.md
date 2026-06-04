@@ -750,10 +750,10 @@ python -m pytest tests/ -q
 | 部分无分页 | 会话列表、卡片列表 | 消息列表已支持分页（无限滚动），其余仍全量加载 |
 | 偏好存 JSON 文本 | users.preferences | 无 schema 验证，前端直接 JSON.parse |
 | 无前端测试 | frontend/tests/ | 只有后端 pytest，前端无 Vitest |
-| 可见性 CSS 重复 | Resources.vue / KnowledgeDetail.vue | 已提取到全局 style.css，但组件内 scoped 样式可能冗余 |
-| Dashboard 标签统计性能 | dashboard.py | 加载所有卡片到 Python 内存做标签拆分，数据量大时有性能问题 |
-| 无 AI 端点独立限流 | /chat, /resources/ask | 仅全局限流 60 次/分钟，单用户可耗尽 AI API 配额 |
-| marked 高亮 API 废弃 | ChatMessage.vue | marked v18+ 的 highlight 选项已废弃，应改用 marked-highlight 扩展 |
+| ~~可见性 CSS 重复~~ | ~~Resources.vue / KnowledgeDetail.vue~~ | 已提取到全局 style.css |
+| ~~Dashboard 标签统计性能~~ | ~~dashboard.py~~ | 已限制最近 500 条卡片 |
+| ~~无 AI 端点独立限流~~ | ~~/chat, /resources/ask~~ | 已添加：/chat 20次/分钟，/resources/ask 10次/分钟 |
+| ~~marked 高亮 API 废弃~~ | ~~ChatMessage.vue~~ | 已改用 marked-highlight 扩展 |
 
 ### 已修复
 

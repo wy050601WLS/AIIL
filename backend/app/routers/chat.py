@@ -9,12 +9,13 @@
 所有端点均需登录认证。
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import StreamingResponse, PlainTextResponse
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from app.database import get_db
+from app.limiter import limiter
 from app.models.conversation import Conversation, Message
 from app.models.user import User
 from app.schemas.conversation import ChatRequest
@@ -30,7 +31,8 @@ router = APIRouter(tags=["AI 对话"])
 
 
 @router.post("/chat")
-async def chat(data: ChatRequest, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+@limiter.limit("20/minute")
+async def chat(data: ChatRequest, request: Request, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """SSE 真流式对话端点
 
     流程：

@@ -7,16 +7,13 @@ uvicorn 启动命令：python -m uvicorn app.main:app --reload
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from slowapi import Limiter, _rate_limit_exceeded_handler
-from slowapi.util import get_remote_address
+from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 
 from app.config import settings
 from app.database import Base  # noqa: F401 — 确保 SQLAlchemy 模型被注册到 Base.metadata
+from app.limiter import limiter
 from app.routers import auth, history, chat, cards, dashboard, templates, resources, knowledge
-
-# 全局限流器：每个 IP 每分钟最多 60 次请求
-limiter = Limiter(key_func=get_remote_address, default_limits=["60/minute"])
 
 app = FastAPI(title="AI 智慧学习系统")
 app.state.limiter = limiter
