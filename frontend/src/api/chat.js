@@ -66,6 +66,10 @@ export async function exportConversation(conversationId) {
   const res = await fetch(`/api/conversations/${conversationId}/export`, {
     headers: { Authorization: `Bearer ${token}` },
   })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: '导出失败' }))
+    throw new Error(err.detail || '导出失败')
+  }
   const blob = await res.blob()
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
@@ -76,10 +80,10 @@ export async function exportConversation(conversationId) {
 }
 
 /**
- * SSE 流式对话
+ * SSE 真流式对话
  *
  * 使用原生 fetch 读取 Server-Sent Events 流，逐 token 回调。
- * 采用回放式 SSE：后端先收集完整 AI 响应，再逐 chunk 发送给前端。
+ * 后端采用真流式：收到 AI 每个 chunk 后立即转发，实现低延迟逐 token 显示。
  *
  * @param {number} conversationId - 会话 ID
  * @param {string} content - 用户消息内容
@@ -131,6 +135,17 @@ export async function streamChat(conversationId, content, onToken, onDone, model
             return
           }
           if (data) onToken(data)
+        }
+      }
+    }
+
+    // 处理缓冲区中剩余的数据
+    if (buffer.trim()) {
+      const lines = buffer.split('\n')
+      for (const line of lines) {
+        if (line.startsWith('data: ')) {
+          const data = line.slice(6)
+          if (data !== '[DONE]' && data) onToken(data)
         }
       }
     }

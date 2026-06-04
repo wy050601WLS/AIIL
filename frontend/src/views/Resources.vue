@@ -756,31 +756,6 @@ function formatSize(bytes) {
   color: var(--danger);
 }
 
-/* ===== 可见性标签 ===== */
-
-.visibility-badge {
-  font-size: 11px;
-  padding: 2px 8px;
-  border-radius: 8px;
-  flex-shrink: 0;
-  font-weight: 500;
-}
-
-.vis-public {
-  background: #e6f7e6;
-  color: #2d7d2d;
-}
-
-.vis-private {
-  background: #fff3e0;
-  color: #b86e00;
-}
-
-.vis-draft {
-  background: #e8eaf6;
-  color: #5c6bc0;
-}
-
 .file-info {
   margin-top: 6px;
   font-size: 13px;

@@ -198,28 +198,6 @@ function tagList(tags) {
   font-size: 11px;
 }
 
-.visibility-badge {
-  font-size: 11px;
-  padding: 2px 8px;
-  border-radius: 8px;
-  font-weight: 500;
-}
-
-.vis-public {
-  background: #e6f7e6;
-  color: #2d7d2d;
-}
-
-.vis-private {
-  background: #fff3e0;
-  color: #b86e00;
-}
-
-.vis-draft {
-  background: #e8eaf6;
-  color: #5c6bc0;
-}
-
 .doc-tags {
   display: flex;
   gap: 6px;

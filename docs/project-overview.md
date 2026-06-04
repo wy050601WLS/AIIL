@@ -43,7 +43,7 @@ GitHub：https://github.com/wy050601WLS/AIIL.git
 | 项目 | 说明 |
 |------|------|
 | 项目名称 | AIIL（AI 智慧学习系统） |
-| 定位 | 基于 AI 的个人学习助手，支持对话问答、知识卡片、学习面板 |
+| 定位 | 基于 AI 的个人学习助手，支持对话问答、知识卡片、学习资料库、知识库文档管理、学习面板 |
 | 技术栈 | 前端 Vue3 + Vite + Pinia + Element Plus，后端 Python FastAPI，AI MiMo |
 | 数据库 | MySQL 8.0，Alembic 迁移管理 |
 | 部署 | Docker Compose（MySQL + 后端 + 前端 Nginx） |
@@ -57,7 +57,7 @@ GitHub：https://github.com/wy050601WLS/AIIL.git
 
 | 功能 | 说明 |
 |------|------|
-| 流式对话 | SSE 实时输出，逐字显示 AI 回复 |
+| 流式对话 | SSE 真流式输出，逐字显示 AI 回复（低延迟） |
 | 多轮对话 | 自动加载历史消息作为上下文 |
 | Markdown 渲染 | 标题、列表、加粗、引用、表格等富文本展示 |
 | 代码高亮 | highlight.js 语法高亮，支持多语言 |
@@ -124,6 +124,7 @@ GitHub：https://github.com/wy050601WLS/AIIL.git
 | 提取卡片 | 从 AI 回复中一键保存精华内容 |
 | 卡片列表 | 按创建时间倒序展示 |
 | 标签筛选 | 支持按标签过滤卡片 |
+| 编辑卡片 | 支持修改内容和标签 |
 | 删除卡片 | 带确认弹窗 |
 | 来源标记 | 记录卡片来源（对话 ID） |
 
@@ -145,6 +146,7 @@ GitHub：https://github.com/wy050601WLS/AIIL.git
 | AI 辅助搜索 | 自然语言提问，AI 分析资料库并推荐相关资料 |
 | 资料编辑 | 支持修改资料的所有字段 |
 | 外链跳转 | 有链接的资料可直接点击打开 |
+| 可见性控制 | 公共/私人/草稿三种可见性，控制访问权限 |
 
 ### 知识库（与学习资料合并展示）
 
@@ -155,6 +157,7 @@ GitHub：https://github.com/wy050601WLS/AIIL.git
 | 全文搜索 | 按标题和标签关键词搜索文档 |
 | 文档详情 | 查看完整文档内容 |
 | 标签管理 | 支持编辑文档标题和标签 |
+| 可见性控制 | 公共/私人/草稿三种可见性，控制访问权限 |
 | 文件管理 | 删除文档时同时清理磁盘文件 |
 | Tab 切换 | 与学习资料合并为一个页面，通过 Tab 切换 |
 
@@ -197,47 +200,53 @@ GitHub：https://github.com/wy050601WLS/AIIL.git
 | Docker Compose | 一键部署 MySQL + 后端 + 前端 Nginx |
 | Alembic 迁移 | 数据库版本管理，支持升级/回滚 |
 | CI 工作流 | GitHub Actions：后端 pytest + 前端 vite build |
-| 单元测试 | 24 个 pytest 测试，覆盖认证、对话、消息、功能、面板 |
+| 单元测试 | 23 个 pytest 测试，覆盖认证、对话、消息、功能、面板 |
 
 ---
 
 ## 三、技术架构
 
 ```
-┌─────────────────────────────────────────────┐
-│                   前端 (Vue3)                │
-│  ┌─────────┐ ┌──────────┐ ┌──────────────┐  │
-│  │  Views   │ │Components│ │   Stores     │  │
-│  │ Chat     │ │Sidebar   │ │ user (Pinia) │  │
-│  │ Login    │ │ChatMsg   │ │ chat         │  │
-│  │ Settings │ │ChatInput │ │ cards        │  │
-│  │ Cards    │ │          │ │ dashboard    │  │
-│  │Dashboard │ │          │ │ theme        │  │
-│  └─────────┘ └──────────┘ └──────────────┘  │
-│           │         API Layer (Axios)        │
-│           │    auth / chat / cards / dash    │
-└───────────┼─────────────────────────────────┘
-            │ HTTP + SSE
-┌───────────┼─────────────────────────────────┐
-│           ▼       后端 (FastAPI)             │
-│  ┌──────────────────────────────────────┐   │
-│  │            Routers                   │   │
-│  │  auth / history / chat / cards / dash│   │
-│  └──────────┬───────────────────────────┘   │
-│  ┌──────────▼───────────────────────────┐   │
-│  │           Services                   │   │
-│  │  auth_service / chat_service / ai    │   │
-│  └──────────┬───────────────────────────┘   │
-│  ┌──────────▼───────────────────────────┐   │
-│  │  Models (SQLAlchemy) + Schemas (Pyd) │   │
-│  │  User / Conversation / Message / Card│   │
-│  └──────────┬───────────────────────────┘   │
-│             │                               │
-│  ┌──────────▼───┐  ┌──────────────────┐    │
-│  │   MySQL 8.0  │  │  MiMo AI API     │    │
-│  │   (alembic)  │  │  (OpenAI compat) │    │
-│  └──────────────┘  └──────────────────┘    │
-└─────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────┐
+│                   前端 (Vue3)                     │
+│  ┌──────────┐ ┌──────────┐ ┌──────────────────┐  │
+│  │  Views    │ │Components│ │     Stores        │  │
+│  │ Chat      │ │Sidebar   │ │ user (Pinia)      │  │
+│  │ Login     │ │ChatMsg   │ │ chat              │  │
+│  │ Settings  │ │ChatInput │ │ cards             │  │
+│  │ Cards     │ │          │ │ dashboard         │  │
+│  │ Dashboard │ │          │ │ resources         │  │
+│  │ Resources │ │          │ │ knowledge         │  │
+│  │KnowDetail │ │          │ │ templates / theme │  │
+│  └──────────┘ └──────────┘ └──────────────────┘  │
+│            │        API Layer (Axios + fetch)      │
+│            │  auth/chat/cards/dash/res/know/tmpl   │
+└────────────┼──────────────────────────────────────┘
+             │ HTTP + SSE
+┌────────────┼──────────────────────────────────────┐
+│            ▼       后端 (FastAPI)                  │
+│  ┌────────────────────────────────────────────┐   │
+│  │              Routers                       │   │
+│  │  auth / history / chat / cards / dashboard │   │
+│  │  resources / knowledge / templates         │   │
+│  └──────────┬─────────────────────────────────┘   │
+│  ┌──────────▼─────────────────────────────────┐   │
+│  │             Services                       │   │
+│  │  ai_service / auth_service / chat_service  │   │
+│  │  document_parser                           │   │
+│  └──────────┬─────────────────────────────────┘   │
+│  ┌──────────▼─────────────────────────────────┐   │
+│  │   Models (SQLAlchemy) + Schemas (Pydantic)  │   │
+│  │   User / Conversation / Message / Card     │   │
+│  │   LearningResource / KnowledgeDocument     │   │
+│  │   PromptTemplate                           │   │
+│  └──────────┬─────────────────────────────────┘   │
+│             │                                     │
+│  ┌──────────▼───┐  ┌──────────────────────┐       │
+│  │   MySQL 8.0  │  │  MiMo AI API         │       │
+│  │   (alembic)  │  │  (OpenAI compat)     │       │
+│  └──────────────┘  └──────────────────────┘       │
+└────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -249,6 +258,9 @@ GitHub：https://github.com/wy050601WLS/AIIL.git
 ```
 users 1──n conversations 1──n messages
 users 1──n knowledge_cards
+users 1──n learning_resources
+users 1──n knowledge_documents
+users 1──n prompt_templates
 ```
 
 ### 表结构
@@ -295,6 +307,45 @@ users 1──n knowledge_cards
 | tags | VARCHAR(500) | 标签（逗号分隔） |
 | created_at | DATETIME | 创建时间 |
 
+#### learning_resources
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| id | INT PK | 自增主键 |
+| user_id | INT FK→users | 所属用户，CASCADE 删除 |
+| title | VARCHAR(200) | 资料标题 |
+| url | VARCHAR(500) | 资料链接（可选） |
+| description | TEXT | 资料描述 |
+| category | VARCHAR(50) | 分类 |
+| resource_type | VARCHAR(20) | 类型（文章/视频/课程等） |
+| tags | VARCHAR(500) | 标签（逗号分隔） |
+| visibility | VARCHAR(10) | 可见性：public/private/draft |
+| created_at | DATETIME | 创建时间 |
+
+#### knowledge_documents
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| id | INT PK | 自增主键 |
+| user_id | INT FK→users | 所属用户，CASCADE 删除 |
+| title | VARCHAR(200) | 文档标题 |
+| file_type | VARCHAR(10) | 文件类型（pdf/docx/txt/md） |
+| file_path | VARCHAR(500) | 磁盘存储路径 |
+| file_size | INT | 文件大小（字节） |
+| content_text | TEXT | 解析后的文本内容 |
+| tags | VARCHAR(500) | 标签（逗号分隔） |
+| visibility | VARCHAR(10) | 可见性：public/private/draft |
+| created_at | DATETIME | 创建时间 |
+
+#### prompt_templates
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| id | INT PK | 自增主键 |
+| user_id | INT FK→users | 所属用户（NULL=系统内置） |
+| title | VARCHAR(100) | 模板标题 |
+| content | TEXT | 模板内容 |
+| category | VARCHAR(50) | 分类标签 |
+| is_builtin | BOOLEAN | 是否内置模板 |
+| created_at | DATETIME | 创建时间 |
+
 ---
 
 ## 五、API 接口一览
@@ -337,6 +388,7 @@ users 1──n knowledge_cards
 |------|------|------|------|
 | POST | /cards | 创建卡片 | ✓ |
 | GET | /cards | 卡片列表（最新优先） | ✓ |
+| PUT | /cards/{id} | 更新卡片内容/标签 | ✓ |
 | DELETE | /cards/{id} | 删除卡片 | ✓ |
 
 ### 学习面板 `/dashboard`
@@ -357,12 +409,21 @@ users 1──n knowledge_cards
 }
 ```
 
+### 对话模板 `/templates`
+
+| 方法 | 路径 | 说明 | 认证 |
+|------|------|------|------|
+| GET | /templates | 模板列表（内置+自定义） | ✓ |
+| POST | /templates | 创建自定义模板 | ✓ |
+| PUT | /templates/{id} | 更新模板 | ✓ |
+| DELETE | /templates/{id} | 删除自定义模板 | ✓ |
+
 ### 学习资料 `/resources`
 
 | 方法 | 路径 | 说明 | 认证 |
 |------|------|------|------|
 | POST | /resources | 创建资料 | ✓ |
-| GET | /resources | 资料列表（支持 category/type 过滤） | ✓ |
+| GET | /resources | 资料列表（公开+自己的，支持 category/type 过滤） | ✓ |
 | PUT | /resources/{id} | 更新资料 | ✓ |
 | DELETE | /resources/{id} | 删除资料 | ✓ |
 | POST | /resources/ask | AI 辅助搜索（自然语言提问） | ✓ |
@@ -372,9 +433,9 @@ users 1──n knowledge_cards
 | 方法 | 路径 | 说明 | 认证 |
 |------|------|------|------|
 | POST | /knowledge/upload | 上传文档（multipart/form-data） | ✓ |
-| GET | /knowledge | 文档列表（支持 keyword 搜索） | ✓ |
+| GET | /knowledge | 文档列表（公开+自己的，支持 keyword 搜索） | ✓ |
 | GET | /knowledge/{id} | 文档详情（含全文内容） | ✓ |
-| PUT | /knowledge/{id} | 更新标题/标签 | ✓ |
+| PUT | /knowledge/{id} | 更新标题/标签/可见性 | ✓ |
 | DELETE | /knowledge/{id} | 删除文档（磁盘文件+数据库） | ✓ |
 
 ---
@@ -386,10 +447,10 @@ users 1──n knowledge_cards
 | /login | Login | × | 登录页 |
 | /register | Register | × | 注册页 |
 | / | Chat | ✓ | 主对话页（默认） |
-| /settings | Settings | ✓ | 个人设置 |
+| /settings | Settings | ✓ | 个人设置（含模板管理） |
 | /cards | Cards | ✓ | 知识卡片 |
 | /dashboard | Dashboard | ✓ | 学习面板 |
-| /resources | Resources | ✓ | 学习资料 + 知识库（Tab 切换） |
+| /resources | Resources | ✓ | 学习资料 + 知识库文档（Tab 切换） |
 | /knowledge/:id | KnowledgeDetail | ✓ | 知识库文档详情 |
 
 ---
@@ -412,6 +473,8 @@ users 1──n knowledge_cards
 | CORS_ORIGINS | http://localhost:5173 | 允许的跨域来源 |
 | HOST | 0.0.0.0 | 服务监听地址 |
 | PORT | 8000 | 服务监听端口 |
+| UPLOAD_DIR | ./uploads | 文件上传目录 |
+| MAX_FILE_SIZE | 20971520 | 最大文件大小（字节，默认 20MB） |
 
 ---
 
@@ -427,19 +490,22 @@ app/
 ├── main.py                # FastAPI 入口，挂载中间件和路由
 ├── models/
 │   ├── user.py            # User 模型
-│   └── conversation.py    # Conversation / Message / KnowledgeCard / KnowledgeDocument 模型
+│   └── conversation.py    # Conversation / Message / KnowledgeCard / LearningResource
+│                          # KnowledgeDocument / PromptTemplate 模型
 ├── schemas/
 │   ├── user.py            # 用户相关 Pydantic 模型
-│   └── conversation.py    # 对话/消息/卡片/面板/知识库 Pydantic 模型
+│   └── conversation.py    # 对话/消息/卡片/面板/资料/文档/模板 Pydantic 模型
 ├── routers/
 │   ├── auth.py            # 认证路由（注册/登录/资料/密码）
 │   ├── history.py         # 会话管理路由（CRUD/置顶/归档）
 │   ├── chat.py            # AI 对话路由（SSE/导出/模型/消息编辑）
-│   ├── cards.py           # 知识卡片路由（增删查）
+│   ├── cards.py           # 知识卡片路由（增删改查）
 │   ├── dashboard.py       # 学习面板路由（统计）
-│   └── knowledge.py       # 知识库路由（上传/列表/详情/删除）
+│   ├── resources.py       # 学习资料路由（CRUD + AI 搜索）
+│   ├── knowledge.py       # 知识库路由（上传/列表/详情/更新/删除）
+│   └── templates.py       # 对话模板路由（CRUD + 内置模板）
 ├── services/
-│   ├── ai_service.py      # AI 调用、消息存储、历史加载（多模态）
+│   ├── ai_service.py      # AI 真流式调用、消息存储、历史加载（多模态）
 │   ├── document_parser.py # 文档解析（PDF/DOCX/TXT/MD）
 │   ├── auth_service.py    # 注册/登录/改密/更新资料
 │   └── chat_service.py    # 会话 CRUD 业务逻辑
@@ -459,7 +525,16 @@ tests/
 └── test_dashboard.py      # 3 个测试：空数据/结构验证/未授权
 ```
 
-共 **24 个测试**，全部通过。
+共 **23 个测试**，全部通过。
+
+### 种子数据 `backend/seed_data.py`
+
+```bash
+cd backend
+python seed_data.py
+```
+
+自动为最新注册的用户生成测试数据：5 个对话（含消息）、5 张知识卡片、7 条学习资料（混合可见性）、4 篇知识库文档（混合可见性）。
 
 ### 数据库迁移 `backend/alembic/versions/`
 
@@ -475,35 +550,39 @@ tests/
 src/
 ├── main.js                # 入口：注册 Pinia / Router / Element Plus
 ├── App.vue                # 根组件：<router-view />
-├── style.css              # 全局主题变量（深色/浅色）+ Element Plus 覆盖
+├── style.css              # 全局主题变量（深色/浅色）+ Element Plus 覆盖 + 通用样式
 ├── router/
-│   └── index.js           # 8 条路由 + 导航守卫
+│   └── index.js           # 9 条路由 + 导航守卫
 ├── api/
 │   ├── index.js           # Axios 实例（拦截器/token/401）
 │   ├── auth.js            # 认证 API
-│   ├── chat.js            # 对话 API + streamChat SSE
+│   ├── chat.js            # 对话 API + streamChat SSE 真流式
 │   ├── cards.js           # 知识卡片 API
 │   ├── dashboard.js       # 学习面板 API
-│   └── knowledge.js       # 知识库 API
+│   ├── resources.js       # 学习资料 API
+│   ├── knowledge.js       # 知识库 API
+│   └── templates.js       # 对话模板 API
 ├── stores/
 │   ├── user.js            # 用户状态（token/资料/偏好）
 │   ├── chat.js            # 对话状态（会话列表/消息/模型/流式）
 │   ├── cards.js           # 知识卡片状态
 │   ├── dashboard.js       # 面板统计数据
+│   ├── resources.js       # 学习资料状态
 │   ├── knowledge.js       # 知识库状态
+│   ├── templates.js       # 对话模板状态
 │   └── theme.js           # 主题切换（深色/浅色）
 ├── components/
 │   ├── Sidebar.vue        # 侧边栏（会话列表/搜索/导航/下拉菜单）
 │   ├── ChatMessage.vue    # 消息气泡（Markdown/图片/操作按钮）
-│   └── ChatInput.vue      # 输入区（文本/图片上传/语音/发送）
+│   └── ChatInput.vue      # 输入区（文本/图片上传/语音/模板选择）
 └── views/
     ├── Login.vue          # 登录页
     ├── Register.vue       # 注册页
     ├── Chat.vue           # 主对话页
-    ├── Settings.vue       # 设置页（资料/偏好/密码）
+    ├── Settings.vue       # 设置页（资料/偏好/密码/模板管理）
     ├── Cards.vue          # 知识卡片页
     ├── Dashboard.vue      # 学习面板页
-    ├── Knowledge.vue      # 知识库文档列表页
+    ├── Resources.vue      # 学习资料 + 知识库文档（Tab 切换）
     └── KnowledgeDetail.vue # 知识库文档详情页
 ```
 
@@ -512,7 +591,7 @@ src/
 ```
 项目根/
 ├── docker-compose.yml     # 3 服务：db + backend + frontend
-├── .env.example           # 环境变量模板
+├── .gitignore
 ├── .gitignore
 ├── README.md
 ├── .github/workflows/ci.yml  # GitHub Actions CI
@@ -547,7 +626,7 @@ src/
 ```bash
 # 后端
 cd backend
-cp ../.env.example .env    # 填入 AI_API_KEY
+cp .env.example .env       # 填入 AI_API_KEY 和 JWT_SECRET_KEY
 pip install -r requirements.txt
 alembic upgrade head
 python -m uvicorn app.main:app --reload
@@ -561,7 +640,7 @@ npm run dev                # http://localhost:5173
 ### Docker 部署
 
 ```bash
-cp .env.example .env       # 填入 AI_API_KEY
+cp backend/.env.example .env  # 填入 AI_API_KEY
 docker-compose up -d       # 前端 :80, 后端 :8000, MySQL :3306
 ```
 
@@ -586,6 +665,11 @@ python -m pytest tests/ -q
 | 十三 | 知识卡片功能 |
 | 十四 | 学习进度面板 |
 | UI 优化 | 侧边栏图标化、下拉菜单重构、主题切换图标化、移除系统提示词 |
+| 学习资料库 | 资料收集/分类/筛选/AI 辅助搜索 |
+| 知识库 | 文档上传/解析(PDF/DOCX/TXT/MD)/全文搜索 |
+| 页面合并 | 学习资料与知识库合并为 Tab 切换页面 |
+| 可见性控制 | 公共/私人/草稿三种可见性，列表过滤+访问权限 |
+| 工程改进 | 修复安全/性能/文档问题，创建 .env.example，更新 README |
 
 ---
 
@@ -606,13 +690,13 @@ python -m pytest tests/ -q
         → load_history 构建完整历史（含 system prompt + 多模态格式）
         → call_ai_api: httpx 流式调用 AI，收集所有 chunk
         → 存 assistant 回复到 DB
-        → StreamingResponse 逐 chunk 回放给前端
+        → StreamingResponse 逐 chunk 真流式转发给前端
       → 前端 onToken: messages[idx].content += token（逐字追加）
       → onDone: loading=false
     → 中断：AbortController.abort() 触发 fetch signal
 ```
 
-**关键细节：** 后端是"回放式 SSE"——先完整接收 AI 响应并存库，再逐 chunk 回放给前端。保证数据完整性，前端看到的是逐字效果。
+**关键细节：** 后端采用"真流式 SSE"——async 生成器收到 AI 每个 chunk 后立即转发给前端（低延迟），流结束后将完整回复存入数据库。
 
 ### 认证流程
 
@@ -665,7 +749,11 @@ python -m pytest tests/ -q
 | 图片存 base64 | messages.images | 大图会撑爆数据库，应改为文件存储 + URL 引用 |
 | 部分无分页 | 会话列表、卡片列表 | 消息列表已支持分页（无限滚动），其余仍全量加载 |
 | 偏好存 JSON 文本 | users.preferences | 无 schema 验证，前端直接 JSON.parse |
-| 无前端测试 | frontend/tests/ | 只有后端 23 个 pytest，前端无 Vitest |
+| 无前端测试 | frontend/tests/ | 只有后端 pytest，前端无 Vitest |
+| 可见性 CSS 重复 | Resources.vue / KnowledgeDetail.vue | 已提取到全局 style.css，但组件内 scoped 样式可能冗余 |
+| Dashboard 标签统计性能 | dashboard.py | 加载所有卡片到 Python 内存做标签拆分，数据量大时有性能问题 |
+| 无 AI 端点独立限流 | /chat, /resources/ask | 仅全局限流 60 次/分钟，单用户可耗尽 AI API 配额 |
+| marked 高亮 API 废弃 | ChatMessage.vue | marked v18+ 的 highlight 选项已废弃，应改用 marked-highlight 扩展 |
 
 ### 已修复
 
@@ -678,6 +766,11 @@ python -m pytest tests/ -q
 | ~~回放式 SSE 延迟高~~ | 改为 async 生成器真流式，首 token 延迟降至 AI 首 chunk 时间 |
 | ~~消息无分页~~ | 首次加载 50 条，向上滚动自动加载更早消息（无限滚动） |
 | ~~知识卡片不可编辑~~ | 新增 PUT /cards/{id}，支持内容和标签的编辑 |
+| ~~exportConversation 无状态检查~~ | 添加 HTTP 响应状态检查，错误时抛出异常而非下载错误页面 |
+| ~~streamChat 缓冲区未完全消费~~ | 流结束后处理剩余 buffer 中的数据 |
+| ~~docker-compose version 废弃~~ | 移除 version: "3.8"（Docker Compose V2 已忽略） |
+| ~~.env.example 缺失~~ | 创建 backend/.env.example 供新开发者参考 |
+| ~~README 功能列表过时~~ | 更新为完整功能清单，包含所有已实现功能 |
 
 ---
 
@@ -762,57 +855,3 @@ python -m pytest tests/ -q
 - 每次功能完成后更新 `docs/build-history.md`
 - 单次提交只做一件事
 
----
-
-## 十六、环境变量
-
-| 变量 | 默认值 | 说明 |
-|------|--------|------|
-| DB_HOST | localhost | MySQL 主机 |
-| DB_PORT | 3306 | MySQL 端口 |
-| DB_USER | root | MySQL 用户 |
-| DB_PASSWORD | root | MySQL 密码 |
-| DB_NAME | ai | 数据库名 |
-| JWT_SECRET_KEY | aiil-secret-key | JWT 签名密钥 |
-| JWT_ALGORITHM | HS256 | JWT 算法 |
-| JWT_EXPIRE_HOURS | 24 | Token 有效期（小时） |
-| AI_API_KEY | - | MiMo API 密钥 |
-| AI_BASE_URL | https://token-plan-cn.xiaomimimo.com | AI 接口地址 |
-| AI_MODEL | mimo-v2.5-pro | 默认 AI 模型 |
-| CORS_ORIGINS | http://localhost:5173 | 允许的跨域来源 |
-| HOST | 0.0.0.0 | 服务监听地址 |
-| PORT | 8000 | 服务监听端口 |
-
----
-
-## 十七、快速启动
-
-### 本地开发
-
-```bash
-# 后端
-cd backend
-cp ../.env.example .env    # 填入 AI_API_KEY
-pip install -r requirements.txt
-alembic upgrade head
-python -m uvicorn app.main:app --reload
-
-# 前端
-cd frontend
-npm install
-npm run dev                # http://localhost:5173
-```
-
-### Docker 部署
-
-```bash
-cp .env.example .env       # 填入 AI_API_KEY
-docker-compose up -d       # 前端 :80, 后端 :8000, MySQL :3306
-```
-
-### 运行测试
-
-```bash
-cd backend
-python -m pytest tests/ -q
-```

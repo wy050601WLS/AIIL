@@ -36,3 +36,7 @@ npm-debug.log*
 
 # Build
 *.spec
+
+# Backend
+backend/test.db
+backend/uploads/
