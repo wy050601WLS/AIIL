@@ -690,3 +690,38 @@ AIIL/
 - README 更新完整功能清单和环境变量表
 - project-overview.md 全面更新：ER 图、API 列表、文件清单、已知问题
 - 可见性标签 CSS 提取到全局 style.css，消除组件间重复
+
+---
+
+## 阶段二十九：中等严重性问题修复
+
+修复审计中发现的中等严重性问题，涉及错误处理、安全防护、性能优化和代码健壮性。
+
+### AB-1：前端 Store 错误处理补全
+- `cards.js`：loadCards/addCard/editCard/removeCard 全部添加 try-catch + ElMessage.error
+- `templates.js`：loadTemplates/addTemplate/editTemplate/removeTemplate 全部添加 try-catch
+- `dashboard.js`：loadStats 添加 try-catch + ElMessage.error
+- `resources.js`：addResource/editResource/removeResource 添加 try-catch（loadResources/ask 已有）
+
+### AB-2：XSS 防护（DOMPurify）
+- 安装 `dompurify` 依赖
+- ChatMessage.vue 的 `rendered` computed 属性使用 `DOMPurify.sanitize()` 包裹 `marked.parse()` 输出
+- 防止 AI 回复中可能包含的恶意 HTML/JS 注入
+
+### AB-3：数据库查询优化
+- Message 模型新增复合索引 `ix_messages_conversation_created(conversation_id, created_at)`
+- 覆盖 load_history 和 get_messages 的核心查询路径
+- init_db.sql 同步新增索引定义
+
+### AB-4：AI 搜索性能优化
+- `/resources/ask` 端点限制加载最近 100 条资料（原为全量加载），避免 prompt 过长导致 token 浪费和超时
+- 错误处理细化：区分 TimeoutException（504）和 HTTPStatusError（502），提供更具体的错误信息
+
+### AB-5：重新生成消息容错
+- regenerate 函数在删除旧 AI 回复前暂存副本
+- 流式失败或无内容时自动恢复旧消息，避免数据丢失
+- 恢复时显示提示"重新生成失败，已恢复原回复"
+
+### AB-6：知识库路由参数校验
+- KnowledgeDetail.vue onMounted 添加 docId 校验（NaN 检查）
+- 无效 ID 时显示错误提示并跳转回资源列表页

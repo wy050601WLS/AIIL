@@ -33,6 +33,11 @@ const fileTypeLabels = {
 
 onMounted(async () => {
   const docId = Number(route.params.id)
+  if (!docId || isNaN(docId)) {
+    ElMessage.error('无效的文档 ID')
+    router.push('/resources')
+    return
+  }
   await knowledgeStore.loadDocument(docId)
 })
 

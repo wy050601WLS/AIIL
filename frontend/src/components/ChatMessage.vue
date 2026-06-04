@@ -9,6 +9,7 @@
 import { marked } from 'marked'
 import { markedHighlight } from 'marked-highlight'
 import hljs from 'highlight.js'
+import DOMPurify from 'dompurify'
 
 // 配置 Markdown 渲染器：使用 marked-highlight 扩展启用代码高亮
 marked.use(
@@ -60,7 +61,7 @@ const bubbleRef = ref(null)
 /** 将 AI 消息的 Markdown 内容渲染为 HTML（用户消息不渲染） */
 const rendered = computed(() => {
   if (props.role === 'user') return null
-  return marked.parse(props.content || '')
+  return DOMPurify.sanitize(marked.parse(props.content || ''))
 })
 
 /** 头像显示：用户显示 emoji 头像或「你」，AI 显示「AI」 */

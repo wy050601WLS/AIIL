@@ -29,26 +29,40 @@ export const useResourcesStore = defineStore('resources', () => {
 
   /** 创建学习资料并添加到列表头部 */
   async function addResource(resourceData) {
-    const { data } = await createResource(resourceData)
-    resources.value.unshift(data)
-    ElMessage.success('资料已保存')
-    return data
+    try {
+      const { data } = await createResource(resourceData)
+      resources.value.unshift(data)
+      ElMessage.success('资料已保存')
+      return data
+    } catch {
+      ElMessage.error('保存资料失败')
+      return null
+    }
   }
 
   /** 更新学习资料 */
   async function editResource(resourceId, updates) {
-    const { data } = await updateResource(resourceId, updates)
-    const idx = resources.value.findIndex(r => r.id === resourceId)
-    if (idx !== -1) resources.value[idx] = data
-    ElMessage.success('资料已更新')
-    return data
+    try {
+      const { data } = await updateResource(resourceId, updates)
+      const idx = resources.value.findIndex(r => r.id === resourceId)
+      if (idx !== -1) resources.value[idx] = data
+      ElMessage.success('资料已更新')
+      return data
+    } catch {
+      ElMessage.error('更新资料失败')
+      return null
+    }
   }
 
   /** 删除学习资料 */
   async function removeResource(resourceId) {
-    await deleteResource(resourceId)
-    resources.value = resources.value.filter(r => r.id !== resourceId)
-    ElMessage.success('资料已删除')
+    try {
+      await deleteResource(resourceId)
+      resources.value = resources.value.filter(r => r.id !== resourceId)
+      ElMessage.success('资料已删除')
+    } catch {
+      ElMessage.error('删除资料失败')
+    }
   }
 
   /** AI 辅助搜索：发送问题，获取 AI 分析和推荐 */

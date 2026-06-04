@@ -1,6 +1,6 @@
 -- AI 智慧学习系统数据库初始化脚本
 -- 数据库: ai
--- 最后同步: 2026-06-03（新增 visibility 列）
+-- 最后同步: 2026-06-04（新增复合索引）
 
 USE ai;
 
@@ -37,7 +37,8 @@ CREATE TABLE IF NOT EXISTS messages (
     images TEXT DEFAULT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE,
-    INDEX idx_conversation_id (conversation_id)
+    INDEX idx_conversation_id (conversation_id),
+    INDEX ix_messages_conversation_created (conversation_id, created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- 知识卡片表

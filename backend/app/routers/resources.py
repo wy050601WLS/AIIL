@@ -107,12 +107,13 @@ def ask_resources(data: ResourceAskRequest, request: Request, user: User = Depen
 
     将用户的问题和所有资料的标题/描述发送给 AI，让 AI 分析哪些资料与问题相关并给出建议。
     """
-    # 加载公开资料 + 自己的资料
+    # 加载公开资料 + 自己的资料（限制最近 100 条避免 prompt 过长）
     from sqlalchemy import or_
     resources = (
         db.query(LearningResource)
         .filter(or_(LearningResource.visibility == "public", LearningResource.user_id == user.id))
         .order_by(LearningResource.created_at.desc())
+        .limit(100)
         .all()
     )
 
@@ -174,6 +175,10 @@ def ask_resources(data: ResourceAskRequest, request: Request, user: User = Depen
             response.raise_for_status()
             result = response.json()
             answer = result["choices"][0]["message"]["content"]
+    except httpx.TimeoutException:
+        raise HTTPException(status_code=status.HTTP_504_GATEWAY_TIMEOUT, detail="AI 服务响应超时，请稍后重试")
+    except httpx.HTTPStatusError as e:
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=f"AI 服务返回错误 ({e.response.status_code})")
     except Exception:
         raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail="AI 服务暂时不可用，请稍后重试")
 

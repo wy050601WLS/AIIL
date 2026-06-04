@@ -31,6 +31,8 @@ export const useTemplatesStore = defineStore('templates', () => {
     try {
       const { data } = await getTemplates()
       templates.value = data
+    } catch {
+      ElMessage.error('加载模板失败')
     } finally {
       loading.value = false
     }
@@ -38,26 +40,40 @@ export const useTemplatesStore = defineStore('templates', () => {
 
   /** 创建自定义模板并添加到列表 */
   async function addTemplate(title, content, category) {
-    const { data } = await createTemplate({ title, content, category })
-    templates.value.push(data)
-    ElMessage.success('模板已保存')
-    return data
+    try {
+      const { data } = await createTemplate({ title, content, category })
+      templates.value.push(data)
+      ElMessage.success('模板已保存')
+      return data
+    } catch {
+      ElMessage.error('保存模板失败')
+      return null
+    }
   }
 
   /** 更新自定义模板 */
   async function editTemplate(templateId, updates) {
-    const { data } = await updateTemplate(templateId, updates)
-    const idx = templates.value.findIndex(t => t.id === templateId)
-    if (idx !== -1) templates.value[idx] = data
-    ElMessage.success('模板已更新')
-    return data
+    try {
+      const { data } = await updateTemplate(templateId, updates)
+      const idx = templates.value.findIndex(t => t.id === templateId)
+      if (idx !== -1) templates.value[idx] = data
+      ElMessage.success('模板已更新')
+      return data
+    } catch {
+      ElMessage.error('更新模板失败')
+      return null
+    }
   }
 
   /** 删除自定义模板 */
   async function removeTemplate(templateId) {
-    await deleteTemplate(templateId)
-    templates.value = templates.value.filter(t => t.id !== templateId)
-    ElMessage.success('模板已删除')
+    try {
+      await deleteTemplate(templateId)
+      templates.value = templates.value.filter(t => t.id !== templateId)
+      ElMessage.success('模板已删除')
+    } catch {
+      ElMessage.error('删除模板失败')
+    }
   }
 
   return { templates, loading, groupedTemplates, loadTemplates, addTemplate, editTemplate, removeTemplate }

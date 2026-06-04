@@ -14,7 +14,7 @@ from fastapi.responses import StreamingResponse, PlainTextResponse
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
-from app.database import get_db
+from app.database import get_db, SessionLocal
 from app.limiter import limiter
 from app.models.conversation import Conversation, Message
 from app.models.user import User
@@ -70,18 +70,25 @@ async def chat(data: ChatRequest, request: Request, user: User = Depends(get_cur
     async def generate():
         """真流式 SSE 生成器：收到 AI chunk 立即转发，流结束后存库"""
         full_response = ""
-        async for chunk in stream_ai_api(history, model=data.model):
-            full_response += chunk
-            yield f"data: {chunk}\n\n"
-        # 流结束后将完整回复存入数据库
+        try:
+            async for chunk in stream_ai_api(history, model=data.model):
+                full_response += chunk
+                yield f"data: {chunk}\n\n"
+        except Exception:
+            yield "data: [ERROR] AI 服务暂时不可用，请稍后重试\n\n"
+        # 流结束后将完整回复存入数据库（使用独立 session 避免依赖注入的 session 已关闭）
         if full_response:
-            msg = Message(
-                conversation_id=data.conversation_id,
-                role="assistant",
-                content=full_response,
-            )
-            db.add(msg)
-            db.commit()
+            save_db = SessionLocal()
+            try:
+                msg = Message(
+                    conversation_id=data.conversation_id,
+                    role="assistant",
+                    content=full_response,
+                )
+                save_db.add(msg)
+                save_db.commit()
+            finally:
+                save_db.close()
         yield "data: [DONE]\n\n"
 
     return StreamingResponse(generate(), media_type="text/event-stream")

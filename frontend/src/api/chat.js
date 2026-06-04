@@ -110,8 +110,9 @@ export async function streamChat(conversationId, content, onToken, onDone, model
     })
 
     if (!res.ok) {
+      const errBody = await res.json().catch(() => ({ detail: '请求失败' }))
       onDone?.()
-      return
+      throw new Error(errBody.detail || `请求失败 (${res.status})`)
     }
 
     // 读取 SSE 流：逐块读取并解析 "data: ..." 格式

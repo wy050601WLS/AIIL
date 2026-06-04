@@ -19,6 +19,8 @@ export const useCardsStore = defineStore('cards', () => {
     try {
       const { data } = await getCards()
       cards.value = data
+    } catch {
+      ElMessage.error('加载卡片失败')
     } finally {
       loading.value = false
     }
@@ -26,26 +28,40 @@ export const useCardsStore = defineStore('cards', () => {
 
   /** 创建知识卡片并添加到列表头部 */
   async function addCard(content, source, tags) {
-    const { data } = await createCard({ content, source, tags })
-    cards.value.unshift(data)
-    ElMessage.success('已保存为知识卡片')
-    return data
+    try {
+      const { data } = await createCard({ content, source, tags })
+      cards.value.unshift(data)
+      ElMessage.success('已保存为知识卡片')
+      return data
+    } catch {
+      ElMessage.error('保存卡片失败')
+      return null
+    }
   }
 
   /** 更新知识卡片内容和标签 */
   async function editCard(cardId, updates) {
-    const { data } = await updateCard(cardId, updates)
-    const idx = cards.value.findIndex(c => c.id === cardId)
-    if (idx !== -1) cards.value[idx] = data
-    ElMessage.success('卡片已更新')
-    return data
+    try {
+      const { data } = await updateCard(cardId, updates)
+      const idx = cards.value.findIndex(c => c.id === cardId)
+      if (idx !== -1) cards.value[idx] = data
+      ElMessage.success('卡片已更新')
+      return data
+    } catch {
+      ElMessage.error('更新卡片失败')
+      return null
+    }
   }
 
   /** 删除知识卡片并从列表中移除 */
   async function removeCard(cardId) {
-    await deleteCard(cardId)
-    cards.value = cards.value.filter(c => c.id !== cardId)
-    ElMessage.success('卡片已删除')
+    try {
+      await deleteCard(cardId)
+      cards.value = cards.value.filter(c => c.id !== cardId)
+      ElMessage.success('卡片已删除')
+    } catch {
+      ElMessage.error('删除卡片失败')
+    }
   }
 
   return { cards, loading, loadCards, addCard, editCard, removeCard }

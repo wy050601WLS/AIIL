@@ -71,17 +71,26 @@ export const useChatStore = defineStore('chat', () => {
 
   /** 加载用户的会话列表 */
   async function loadConversations() {
-    const { data } = await getConversations()
-    conversations.value = data
+    try {
+      const { data } = await getConversations()
+      conversations.value = data
+    } catch {
+      ElMessage.error('加载会话列表失败')
+    }
   }
 
   /** 创建新会话并自动选中 */
   async function newConversation(title = '新对话') {
-    const { data } = await createConversation(title)
-    conversations.value.unshift(data)
-    currentId.value = data.id
-    messages.value = []
-    return data
+    try {
+      const { data } = await createConversation(title)
+      conversations.value.unshift(data)
+      currentId.value = data.id
+      messages.value = []
+      return data
+    } catch {
+      ElMessage.error('创建会话失败')
+      return null
+    }
   }
 
   /** 选中指定会话并加载最新的 50 条消息 */
@@ -172,9 +181,10 @@ export const useChatStore = defineStore('chat', () => {
     const lastUserIdx = [...messages.value].reverse().findIndex(m => m.role === 'user')
     if (lastUserIdx === -1) return
     const lastUserContent = messages.value[messages.value.length - 1 - lastUserIdx].content
-    // 移除最后一条 AI 回复
+    // 暂存旧的 AI 回复，失败时恢复
+    let oldMessage = null
     if (messages.value[messages.value.length - 1].role === 'assistant') {
-      messages.value.pop()
+      oldMessage = messages.value.pop()
     }
     const idx = messages.value.length
     messages.value.push({ role: 'assistant', content: '', created_at: new Date().toISOString() })
@@ -190,7 +200,18 @@ export const useChatStore = defineStore('chat', () => {
         true,
         abortController.signal,
       )
+      // 流式完成但无内容，恢复旧消息
+      if (!messages.value[idx].content && oldMessage) {
+        messages.value.splice(idx, 1)
+        messages.value.push(oldMessage)
+        ElMessage.error('重新生成失败，已恢复原回复')
+      }
     } catch {
+      // 失败时恢复旧消息
+      if (oldMessage) {
+        messages.value.splice(idx, 1)
+        messages.value.push(oldMessage)
+      }
       loading.value = false
     } finally {
       abortController = null
@@ -208,52 +229,80 @@ export const useChatStore = defineStore('chat', () => {
 
   /** 重命名会话标题 */
   async function rename(id, title) {
-    const { data } = await renameConversation(id, title)
-    const conv = conversations.value.find(c => c.id === id)
-    if (conv) conv.title = data.title
+    try {
+      const { data } = await renameConversation(id, title)
+      const conv = conversations.value.find(c => c.id === id)
+      if (conv) conv.title = data.title
+    } catch {
+      ElMessage.error('重命名失败')
+    }
   }
 
   /** 删除会话（从列表中移除，若是当前会话则清空消息） */
   async function remove(id) {
-    await deleteConversation(id)
-    conversations.value = conversations.value.filter(c => c.id !== id)
-    if (currentId.value === id) {
-      currentId.value = null
-      messages.value = []
+    try {
+      await deleteConversation(id)
+      conversations.value = conversations.value.filter(c => c.id !== id)
+      if (currentId.value === id) {
+        currentId.value = null
+        messages.value = []
+      }
+    } catch {
+      ElMessage.error('删除会话失败')
     }
   }
 
   /** 导出当前会话为 Markdown 文件 */
   async function exportCurrent() {
     if (!currentId.value) return
-    await exportConversation(currentId.value)
+    try {
+      await exportConversation(currentId.value)
+    } catch (err) {
+      ElMessage.error(err.message || '导出失败')
+    }
   }
 
   /** 编辑消息内容并同步更新本地状态 */
   async function editMessage(messageId, content) {
-    await editMessageApi(messageId, content)
-    const msg = messages.value.find(m => m.id === messageId)
-    if (msg) msg.content = content
+    try {
+      await editMessageApi(messageId, content)
+      const msg = messages.value.find(m => m.id === messageId)
+      if (msg) msg.content = content
+    } catch {
+      ElMessage.error('编辑消息失败')
+    }
   }
 
   /** 删除消息并从本地列表移除 */
   async function deleteMessage(messageId) {
-    await deleteMessageApi(messageId)
-    messages.value = messages.value.filter(m => m.id !== messageId)
+    try {
+      await deleteMessageApi(messageId)
+      messages.value = messages.value.filter(m => m.id !== messageId)
+    } catch {
+      ElMessage.error('删除消息失败')
+    }
   }
 
   /** 切换会话置顶状态 */
   async function pin(id) {
-    const { data } = await pinConversationApi(id)
-    const conv = conversations.value.find(c => c.id === id)
-    if (conv) conv.pinned = data.pinned
+    try {
+      const { data } = await pinConversationApi(id)
+      const conv = conversations.value.find(c => c.id === id)
+      if (conv) conv.pinned = data.pinned
+    } catch {
+      ElMessage.error('操作失败')
+    }
   }
 
   /** 切换会话归档状态 */
   async function archive(id) {
-    const { data } = await archiveConversationApi(id)
-    const conv = conversations.value.find(c => c.id === id)
-    if (conv) conv.archived = data.archived
+    try {
+      const { data } = await archiveConversationApi(id)
+      const conv = conversations.value.find(c => c.id === id)
+      if (conv) conv.archived = data.archived
+    } catch {
+      ElMessage.error('操作失败')
+    }
   }
 
   /** 切换显示/隐藏已归档会话 */

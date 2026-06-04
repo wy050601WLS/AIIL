@@ -6,6 +6,7 @@
 
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
+import { ElMessage } from 'element-plus'
 import { getDashboardStats } from '../api/dashboard'
 
 export const useDashboardStore = defineStore('dashboard', () => {
@@ -18,6 +19,8 @@ export const useDashboardStore = defineStore('dashboard', () => {
     try {
       const { data } = await getDashboardStats()
       stats.value = data
+    } catch {
+      ElMessage.error('加载统计数据失败')
     } finally {
       loading.value = false
     }

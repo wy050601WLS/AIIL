@@ -98,7 +98,7 @@ GitHub：https://github.com/wy050601WLS/AIIL.git
 
 | 功能 | 说明 |
 |------|------|
-| 内置模板 | 5 个预设模板：翻译、解释、练习、代码审查、总结 |
+| 内置模板 | 23 个预设模板：翻译、解释、练习、编程、写作、学习、数学、英语 |
 | 自定义模板 | 用户可创建/编辑/删除自定义模板 |
 | 分类管理 | 模板按分类标签分组展示 |
 | 快速选择 | 输入框工具栏一键打开模板面板，点击即填充 |
@@ -188,10 +188,12 @@ GitHub：https://github.com/wy050601WLS/AIIL.git
 |------|------|
 | JWT 认证 | 所有 API 需 Bearer Token |
 | 密码哈希 | bcrypt 加密存储 |
-| 接口限流 | slowapi 全局 60 次/分钟 |
+| 接口限流 | slowapi 全局 60 次/分钟，关键端点独立限流 |
 | CORS 配置 | 可配置允许的跨域来源 |
 | 归属校验 | 所有操作校验资源归属权 |
 | 401 自动跳转 | Token 过期自动跳转登录页 |
+| XSS 防护 | DOMPurify 清理 Markdown 渲染输出 |
+| 认证限流 | 注册 5次/分钟，登录 10次/分钟 |
 
 ### 部署与测试
 
@@ -754,6 +756,11 @@ python -m pytest tests/ -q
 | ~~Dashboard 标签统计性能~~ | ~~dashboard.py~~ | 已限制最近 500 条卡片 |
 | ~~无 AI 端点独立限流~~ | ~~/chat, /resources/ask~~ | 已添加：/chat 20次/分钟，/resources/ask 10次/分钟 |
 | ~~marked 高亮 API 废弃~~ | ~~ChatMessage.vue~~ | 已改用 marked-highlight 扩展 |
+| ~~Store 缺少错误处理~~ | ~~cards/templates/dashboard/resources~~ | 全部 store 操作已添加 try-catch |
+| ~~XSS 风险~~ | ~~ChatMessage.vue~~ | 已使用 DOMPurify 渲染 Markdown HTML |
+| ~~消息查询无复合索引~~ | ~~messages 表~~ | 已添加 (conversation_id, created_at) 复合索引 |
+| ~~AI 搜索全量加载资料~~ | ~~/resources/ask~~ | 已限制最近 100 条，避免 prompt 过长 |
+| ~~重新生成失败丢消息~~ | ~~chat store regenerate~~ | 失败时自动恢复旧 AI 回复 |
 
 ### 已修复
 
@@ -771,6 +778,16 @@ python -m pytest tests/ -q
 | ~~docker-compose version 废弃~~ | 移除 version: "3.8"（Docker Compose V2 已忽略） |
 | ~~.env.example 缺失~~ | 创建 backend/.env.example 供新开发者参考 |
 | ~~README 功能列表过时~~ | 更新为完整功能清单，包含所有已实现功能 |
+| ~~SSE generator DB session 问题~~ | generator 使用独立 SessionLocal() 保存 AI 回复 |
+| ~~SSE 流错误未传达前端~~ | generator 捕获异常，yield [ERROR] 消息 |
+| ~~streamChat 静默吞错误~~ | 非 OK 响应读取 error body 后抛出 |
+| ~~认证端点无限流~~ | register 5/min，login 10/min |
+| ~~chat store 未处理异常~~ | 全部 9 个操作添加 try-catch |
+| ~~前端 store 缺少错误处理~~ | cards/templates/dashboard/resources 全部补全 |
+| ~~Markdown 渲染 XSS 风险~~ | DOMPurify 清理 marked 输出 |
+| ~~消息查询无复合索引~~ | (conversation_id, created_at) 复合索引 |
+| ~~AI 搜索全量加载~~ | 限制最近 100 条资料 |
+| ~~重新生成失败丢消息~~ | 失败时恢复旧 AI 回复 |
 
 ---
 

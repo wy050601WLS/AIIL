@@ -6,7 +6,7 @@
 
 from datetime import datetime
 
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Enum, Boolean
+from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Enum, Boolean, Index
 from sqlalchemy.orm import relationship
 
 from app.database import Base
@@ -50,6 +50,10 @@ class Message(Base):
     created_at = Column(DateTime, default=datetime.now)
 
     conversation = relationship("Conversation", back_populates="messages")
+
+    __table_args__ = (
+        Index("ix_messages_conversation_created", "conversation_id", "created_at"),
+    )
 
 
 class KnowledgeCard(Base):

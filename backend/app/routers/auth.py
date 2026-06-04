@@ -4,10 +4,11 @@
 前缀：/auth
 """
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session
 
 from app.database import get_db
+from app.limiter import limiter
 from app.schemas.user import UserCreate, UserLogin, UserResponse, Token, ChangePassword, UserUpdate
 from app.services.auth_service import register_user, login_user, change_password, update_profile
 from app.models.user import User
@@ -17,13 +18,15 @@ router = APIRouter(prefix="/auth", tags=["认证"])
 
 
 @router.post("/register", response_model=UserResponse)
-def register(data: UserCreate, db: Session = Depends(get_db)):
+@limiter.limit("5/minute")
+def register(data: UserCreate, request: Request, db: Session = Depends(get_db)):
     """用户注册，返回用户信息（不含密码）"""
     return register_user(data, db)
 
 
 @router.post("/login", response_model=Token)
-def login(data: UserLogin, db: Session = Depends(get_db)):
+@limiter.limit("10/minute")
+def login(data: UserLogin, request: Request, db: Session = Depends(get_db)):
     """用户登录，返回 JWT 访问令牌"""
     return login_user(data, db)
 
