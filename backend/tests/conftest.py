@@ -21,8 +21,10 @@ def override_get_db():
         db.close()
 
 
-# 测试环境禁用限流
-app.state.limiter = Limiter(key_func=get_remote_address, enabled=False)
+# 测试环境禁用限流：禁用路由装饰器使用的 limiter 实例
+from app.limiter import limiter as app_limiter
+app_limiter.enabled = False
+app.state.limiter = app_limiter
 app.dependency_overrides[get_db] = override_get_db
 
 

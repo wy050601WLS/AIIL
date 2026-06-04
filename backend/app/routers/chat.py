@@ -14,6 +14,7 @@ from fastapi.responses import StreamingResponse, PlainTextResponse
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
+from app.config import settings
 from app.database import get_db, SessionLocal
 from app.limiter import limiter
 from app.models.conversation import Conversation, Message
